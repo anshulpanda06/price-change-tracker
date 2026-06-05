@@ -33,6 +33,10 @@ body{background:var(--bg);color:var(--ink);font-family:var(--sans);min-height:10
 .sync-lbl{font-family:var(--mono);font-size:10px;color:rgba(255,255,255,.4)}
 .nav-btn{font-family:var(--mono);font-size:10px;padding:5px 11px;border:1px solid rgba(255,255,255,.2);background:transparent;color:#f5f2eb;cursor:pointer;border-radius:3px;letter-spacing:.04em;transition:all .15s;white-space:nowrap}
 .nav-btn:hover{background:rgba(255,255,255,.1)}
+.nav-tabs{display:flex;height:100%}
+.nav-tab{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;padding:0 16px;display:flex;align-items:center;color:rgba(255,255,255,.4);text-decoration:none;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap}
+.nav-tab:hover{color:rgba(255,255,255,.7)}
+.nav-tab.on{color:#f5f2eb;border-bottom-color:#c84b2f}
 .nav-btn.sync-now{border-color:rgba(200,75,47,.6);color:#fca99a;position:relative}
 .nav-btn.sync-now:hover{background:rgba(200,75,47,.2)}
 .nav-btn.syncing{opacity:.6;cursor:not-allowed}
@@ -188,10 +192,6 @@ tbody tr,.card{animation:fadeUp .16s ease both}
 
 <nav class="nav">
   <div class="nav-brand">NUUK <span>×</span> Amazon</div>
-  <div class="nav-tabs">
-  <a class="nav-tab on" href="index.html">Amazon Tracker</a>
-  <a class="nav-tab" href="nuuk-price-tracker.html">Price Change Log</a>
-</div>
   <div class="nav-center">
     <div class="report-badge">Latest report: <strong id="nav-date">—</strong></div>
   </div>
@@ -336,7 +336,7 @@ const SHEET_NAME = 'Price History';
 
 // After deploying Apps Script as Web App (see NuukBuyboxSync.gs → doGet()),
 // paste the Web App URL here:
-const SYNC_URL = 'https://script.google.com/a/macros/nuuk.in/s/AKfycbyMQVvhGSHXr4oght032stLCBBjaDp1U8aXzNJhpbpuTZSgzmGdzv9W9G-aOkMGZ4L3Pg/exec';
+const SYNC_URL = 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE';
 // ══════════════════════════════════════════════════════════════
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
