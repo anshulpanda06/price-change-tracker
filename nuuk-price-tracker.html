@@ -179,8 +179,6 @@ tbody tr,.msg-card,.change-row{animation:fadeUp .16s ease both}
     <a class="nav-tab on" href="#">Price Change Log</a>
   </div>
   <div class="nav-right">
-    <span id="key-status" style="font-family:var(--mono);font-size:10px;cursor:pointer;white-space:nowrap" onclick="promptForKey()">○ No API key</span>
-    <button class="nav-btn" onclick="promptForKey()" title="Set Anthropic API key for chat parsing">⚙ API key</button>
     <button class="nav-btn primary" onclick="showParsePanel()">+ Parse message</button>
     <button class="nav-btn" onclick="exportCSV()">↓ Export</button>
   </div>
@@ -293,7 +291,7 @@ tbody tr,.msg-card,.change-row{animation:fadeUp .16s ease both}
             </button>
           </div>
           <div class="parse-hint">
-            Claude will extract SKU price changes from the message. Review and edit before saving to the log.
+            Parsing runs in your browser — free, no API key needed. Review extracted changes and edit anything before saving to the log.
           </div>
         </div>
       </div>
@@ -321,27 +319,8 @@ tbody tr,.msg-card,.change-row{animation:fadeUp .16s ease both}
 
 <script>
 // ══════════════════════════════════════════════════════════════
-// API KEY — stored in localStorage, never leaves the browser
+// NO API KEY NEEDED — parsing runs entirely in the browser
 // ══════════════════════════════════════════════════════════════
-const getApiKey = () => localStorage.getItem('nuuk_api_key') || '';
-
-function promptForKey() {
-  const existing = getApiKey();
-  const key = prompt(
-    existing
-      ? 'Update Anthropic API key (leave blank to keep current):\n\nCurrent: ' + existing.substring(0,18) + '...'
-      : 'Enter your Anthropic API key to enable chat message parsing.\n\nGet it from: console.anthropic.com → API keys\n\nIt starts with sk-ant-api03-...',
-    ''
-  );
-  if (key && key.trim().startsWith('sk-')) {
-    localStorage.setItem('nuuk_api_key', key.trim());
-    document.getElementById('key-status').textContent = 'API key saved ✓';
-    document.getElementById('key-status').style.color = 'var(--green)';
-    setTimeout(() => { document.getElementById('key-status').textContent = getApiKey() ? '● API key set' : '○ No API key'; document.getElementById('key-status').style.color = getApiKey() ? 'rgba(255,255,255,.4)' : '#fca99a'; }, 2000);
-  } else if (key !== null && key.trim()) {
-    alert('Invalid key — must start with sk-ant-');
-  }
-}
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 function fmtDate(d) {
@@ -548,12 +527,177 @@ function confirmDelete() {
 }
 
 // ══════════════════════════════════════════════════════════════
-// MESSAGE PARSING (Claude API)
+// IN-BROWSER PARSER — free, no API key, no external calls
+// Extracts price changes from informal chat messages
 // ══════════════════════════════════════════════════════════════
-function showParsePanel() {
-  setTab('msg');
-  document.getElementById('msg-date').value = todayStr();
-  document.getElementById('msg-text').focus();
+
+// Known products — auto-updated from logRows + hardcoded list
+const BASE_PRODUCTS = [
+  'REN GO','REN PRO','REN BEAM',
+  'BRISK',
+  'HALO v2','HALO LINKD v2','HALO',
+  'DRIP',
+  'BFF',
+  'LIT PRO','LIT V2','LIT',
+  'STROM GO','STROM',
+  'FOLDE v2','FOLDE',
+  'KRUSH',
+  'RIZZ',
+  'HOT BAR','HOT BLOX',
+  'HOTBLOX',
+];
+
+const COLORS = [
+  'Sesame Grey','Serene Grey','Aurora Grey','Aurora Blue','Electric Blue',
+  'Nuuk Red','Tokyo Totti','Icy Metal','Matcha Green','Matcha','Black Pink',
+  'Rose','Red','Blue','Green','Grey','White','Yellow','Black','Teal',
+];
+
+const CHANNELS = ['Amazon','Blinkit','Swiggy','Vijay Sales','Broadway','Website','D2C','QCom','All'];
+
+const REASON_KEYWORDS = {
+  'OOS':'avoid OOS risk',
+  'out of stock':'avoid OOS risk',
+  'stock constraint':'stock constraints',
+  'low stock':'low stock',
+  'DRR':'improve DRR',
+  'dollar':'dollar rate / NLC increase',
+  'NLC':'NLC increase',
+  'GM':'GM optimisation',
+  'margin':'margin optimisation',
+  'campaign':'campaign pricing',
+  'ART':'ART campaign',
+  'event':'event pricing',
+  'launch':'launch pricing',
+  'temporary':'temporary change',
+  'temp':'temporary change',
+};
+
+function getKnownProducts() {
+  const fromLog = logRows.map(r => r.product).filter(Boolean);
+  return [...new Set([...BASE_PRODUCTS, ...fromLog])].sort((a,b) => b.length - a.length); // longest first for greedy match
+}
+
+function matchProduct(text, products) {
+  const t = text.toLowerCase();
+  for (const p of products) {
+    if (t.includes(p.toLowerCase())) return p;
+  }
+  return null;
+}
+
+function matchColor(text) {
+  const t = text.toLowerCase();
+  // Sort longest first to avoid 'Grey' matching before 'Serene Grey'
+  const sorted = [...COLORS].sort((a,b) => b.length - a.length);
+  for (const c of sorted) {
+    if (t.includes(c.toLowerCase())) return c;
+  }
+  return '';
+}
+
+function matchChannel(text) {
+  const t = text.toLowerCase();
+  for (const ch of CHANNELS) {
+    if (t.includes(ch.toLowerCase())) return ch;
+  }
+  return 'All';
+}
+
+function extractPrices(segment) {
+  // Find all numbers that look like prices (3-6 digits, optionally with ₹ or Rs)
+  const matches = [...segment.matchAll(/(?:₹|rs\.?\s*)?(\d{3,6})(?:\s*\/?\s*(?:to|→|->|from|at|-)\s*(?:₹|rs\.?\s*)?(\d{3,6}))?/gi)];
+  const prices = [];
+  for (const m of matches) {
+    if (m[1]) prices.push(parseInt(m[1]));
+    if (m[2]) prices.push(parseInt(m[2]));
+  }
+  return prices;
+}
+
+function extractOldNew(segment) {
+  // Pattern: "from X to Y" or "X to Y" or "X → Y"
+  const fromTo = segment.match(/(?:from\s+)?(?:₹|rs\.?\s*)?(\d{3,6})\s*(?:to|→|->)\s*(?:₹|rs\.?\s*)?(\d{3,6})/i);
+  if (fromTo) return { oldPrice: parseInt(fromTo[1]), newPrice: parseInt(fromTo[2]) };
+
+  // Pattern: "increase/decrease/change to Y" — new price only
+  const toOnly = segment.match(/(?:increase|decrease|reduce|change|move|set|update)(?:\s+\w+){0,4}\s+(?:to|at)\s+(?:₹|rs\.?\s*)?(\d{3,6})/i);
+  if (toOnly) return { oldPrice: null, newPrice: parseInt(toOnly[1]) };
+
+  // Pattern: "X → Y" shorthand
+  const arrow = segment.match(/(?:₹|rs\.?\s*)?(\d{3,6})\s*(?:→|->)\s*(?:₹|rs\.?\s*)?(\d{3,6})/i);
+  if (arrow) return { oldPrice: parseInt(arrow[1]), newPrice: parseInt(arrow[2]) };
+
+  // Two standalone numbers in segment — treat as old→new
+  const nums = [...segment.matchAll(/(?:₹|rs\.?\s*)?(\d{3,6})/g)].map(m => parseInt(m[1]));
+  if (nums.length >= 2) return { oldPrice: nums[0], newPrice: nums[1] };
+  if (nums.length === 1) return { oldPrice: null, newPrice: nums[0] };
+
+  return { oldPrice: null, newPrice: null };
+}
+
+function extractReason(text) {
+  const t = text.toLowerCase();
+  for (const [keyword, reason] of Object.entries(REASON_KEYWORDS)) {
+    if (t.includes(keyword.toLowerCase())) return reason;
+  }
+  // Extract text after "to" / "due to" / "because" as reason
+  const due = text.match(/(?:due to|because|to avoid|to reduce|to increase|to improve|to slow|to push)\s+(.{5,80}?)(?:\.|,|$)/i);
+  if (due) return due[1].trim();
+  return '';
+}
+
+function splitIntoSegments(text) {
+  // Split on numbered list markers, newlines, semicolons, or product name boundaries
+  return text
+    .split(/\n|(?:\d+\.\s)|(?:;\s*)|(?:,\s*(?=(?:BRISK|HALO|DRIP|BFF|LIT|STROM|FOLDE|KRUSH|RIZZ|REN|HOT)))/i)
+    .map(s => s.trim())
+    .filter(s => s.length > 5);
+}
+
+function parseMessageLocally(text) {
+  const products = getKnownProducts();
+  const changes = [];
+  const segments = splitIntoSegments(text);
+
+  // Try segment-by-segment first
+  for (const seg of segments) {
+    const product = matchProduct(seg, products);
+    if (!product) continue;
+
+    const { oldPrice, newPrice } = extractOldNew(seg);
+    if (!newPrice) continue; // must have at least a new price
+
+    const color   = matchColor(seg);
+    const channel = matchChannel(seg);
+    const reason  = extractReason(seg) || extractReason(text); // fallback to full text
+
+    // Avoid duplicate (same product+color+newPrice)
+    const isDupe = changes.some(c => c.product === product && c.color === color && c.newPrice === newPrice);
+    if (!isDupe) {
+      changes.push({ id: uid(), product, color, channel, oldPrice, newPrice, reason, approvedBy: '', status: 'Pending Approval' });
+    }
+  }
+
+  // If segment parsing found nothing, try whole-text extraction
+  if (changes.length === 0) {
+    const product = matchProduct(text, products);
+    if (product) {
+      const { oldPrice, newPrice } = extractOldNew(text);
+      if (newPrice) {
+        changes.push({
+          id: uid(), product,
+          color: matchColor(text),
+          channel: matchChannel(text),
+          oldPrice, newPrice,
+          reason: extractReason(text),
+          approvedBy: '', status: 'Pending Approval'
+        });
+      }
+    }
+  }
+
+  return changes;
 }
 
 async function parseMessage() {
@@ -564,65 +708,18 @@ async function parseMessage() {
 
   if (!text) { alert('Paste a message first.'); return; }
 
-  const apiKey = getApiKey();
-  if (!apiKey) {
-    alert('No API key found.\nAdd ?key=sk-ant-... to the URL, e.g.:\nnuuk-price-tracker.vercel.app?key=sk-ant-api03-...');
-    return;
-  }
-
   const btn = document.querySelector('[onclick="parseMessage()"]');
   btn.disabled = true;
   document.getElementById('parse-spinner').classList.add('on');
   setBar(true);
 
-  // Build known products context
-  const knownProducts = [...new Set(logRows.map(r => r.product).filter(Boolean))].join(', ');
-
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        system: `You extract price change information from informal chat messages sent by an Indian consumer electronics brand (Nuuk) team.
+    // Small delay so spinner is visible
+    await new Promise(r => setTimeout(r, 300));
 
-Known products: ${knownProducts}
+    const changes = parseMessageLocally(text);
 
-Return ONLY valid JSON, no markdown, no explanation:
-{
-  "changes": [
-    {
-      "product": "exact product name from known list or as stated",
-      "color": "color variant or empty string",
-      "channel": "channel name or All",
-      "oldPrice": number or null,
-      "newPrice": number or null,
-      "reason": "concise reason extracted from message (max 120 chars)"
-    }
-  ]
-}
-
-Rules:
-- Extract ALL price changes mentioned
-- Match product names to known products list when possible
-- Prices are in INR, extract numeric value only
-- If old price not mentioned, set null
-- Keep reason concise but meaningful
-- Return empty changes array if no price changes found`,
-        messages: [{ role: 'user', content: `Extract price changes from this message:\n\n${text}` }]
-      })
-    });
-
-    const data = await res.json();
-    if (data.error) throw new Error(data.error.message);
-
-    const raw = data.content.filter(b => b.type === 'text').map(b => b.text).join('');
-    const parsed = JSON.parse(raw.replace(/```json|```/g,'').trim().match(/\{[\s\S]*\}/)[0]);
-    const changes = (parsed.changes || []).map(c => ({ ...c, id: uid(), approved: false, approvedBy: '', status: 'Pending Approval' }));
-
-    // Create message entry
-    const msg = { id: uid(), text, sender, date, msgId, changes, savedToLog: false };
+    const msg = { id: uid(), text, sender, date, msgId, changes };
     msgLog.unshift(msg);
     save();
     renderMessages();
@@ -783,19 +880,7 @@ load();
 populateProductFilter();
 renderLog();
 renderMessages();
-
-// Set today in date field
 document.getElementById('msg-date').value = todayStr();
-
-// Show API key status in nav
-const keyEl = document.getElementById('key-status');
-if (getApiKey()) {
-  keyEl.textContent = '● API key set';
-  keyEl.style.color = 'rgba(255,255,255,.4)';
-} else {
-  keyEl.textContent = '○ No API key';
-  keyEl.style.color = '#fca99a';
-}
 </script>
 </body>
 </html>
