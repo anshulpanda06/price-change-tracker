@@ -346,7 +346,8 @@ tr.detail-row td{padding:0;border-bottom:1px solid var(--line);background:var(--
   <div class="logo">NUUK <span class="logo-pill">PRICING</span></div>
   <div class="header-right">
     <div class="sync-status"><span class="sync-dot"></span><span id="lastSync">Live</span></div>
-    <button class="btn" onclick="openAddRow()">+ Add entry</button>
+    <button class="btn" onclick="loadChannelDataFromSupabase()" title="Re-fetch latest channel files from cloud" style="font-size:11px;padding:5px 11px;">&#8635; Sync</button>
+    <button class="btn btn-primary" onclick="openAddRow()">+ Add entry</button>
   </div>
 </header>
 
@@ -769,6 +770,51 @@ tr.detail-row td{padding:0;border-bottom:1px solid var(--line);background:var(--
 // ── CONFIG ──────────────────────────────────────
 const CONFIG={WEB_APP_URL:'YOUR_APPS_SCRIPT_WEBAPP_URL_HERE',SHEET_URL:'YOUR_GOOGLE_SHEET_JSON_URL_HERE'};
 const CHANNELS=['Amazon','Swiggy','Blinkit','Website'];
+
+// ── SUPABASE CONFIG ──────────────────────────────
+const SB={
+  url:'https://numkcasfacwcwpvtipob.supabase.co',
+  key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im51bWtjYXNmYWN3Y3dwdnRpcG9iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5MTE1NTMsImV4cCI6MjA5NjQ4NzU1M30.N06JUBwSYH2zrP1RWvPnWzmmBcxadHn2vdp3nZD9YhM',
+  bucket:'channel-uploads',
+  table:'channel_upload_meta',
+};
+const sbH={'apikey':SB.key,'Authorization':'Bearer '+SB.key,'Content-Type':'application/json'};
+
+// ── SUPABASE HELPERS ─────────────────────────────
+async function sbUploadFile(path,arrayBuffer,mimeType){
+  const res=await fetch(`${SB.url}/storage/v1/object/${SB.bucket}/${encodeURIComponent(path)}`,{
+    method:'POST',
+    headers:{'apikey':SB.key,'Authorization':'Bearer '+SB.key,'Content-Type':mimeType,'x-upsert':'true'},
+    body:arrayBuffer,
+  });
+  if(!res.ok)throw new Error('Storage upload failed: '+await res.text());
+  return path;
+}
+async function sbInsertMeta(row){
+  const res=await fetch(`${SB.url}/rest/v1/${SB.table}`,{
+    method:'POST',
+    headers:{...sbH,'Prefer':'return=representation'},
+    body:JSON.stringify(row),
+  });
+  if(!res.ok)throw new Error('Meta insert failed: '+await res.text());
+  return res.json();
+}
+async function sbGetLatestPerChannel(){
+  const res=await fetch(
+    `${SB.url}/rest/v1/${SB.table}?select=*&order=uploaded_at.desc&limit=100`,
+    {headers:sbH}
+  );
+  if(!res.ok)return[];
+  const rows=await res.json();
+  const seen={};const latest=[];
+  for(const r of rows){if(!seen[r.channel]){seen[r.channel]=true;latest.push(r);}}
+  return latest;
+}
+async function sbGetFileBytes(storagePath){
+  const res=await fetch(`${SB.url}/storage/v1/object/public/${SB.bucket}/${encodeURIComponent(storagePath)}`);
+  if(!res.ok)throw new Error('File fetch failed: '+res.status);
+  return res.arrayBuffer();
+}
 
 // ── MASTER SKU DATA (from Master_File_26_V5) ────
 const MASTER_SKUS=[{"product":"BFF","colour":"Matcha Green","sku":"FN281729GMB","asin":"B0F4KR3N7J","swiggyId":"886835","blinkitId":"10238514"},{"product":"BFF","colour":"Black Pink Grey","sku":"FN281729BGB","asin":"B0F4KRVQN4","swiggyId":"994021","blinkitId":""},{"product":"BFF","colour":"Tokyo Totti Candy","sku":"FN281729TTB","asin":"B0F4KS1NWP","swiggyId":"502241","blinkitId":"10221604"},{"product":"BFF","colour":"Lemonade Yellow","sku":"FN281729LYB","asin":"B0F4KSL9TQ","swiggyId":"151296","blinkitId":""},{"product":"BFF","colour":"Icy Metal Grey","sku":"FN281729IMB","asin":"B0F4KVV2NQ","swiggyId":"238673","blinkitId":"10221594"},{"product":"DRIP","colour":"Elderberry Black","sku":"FT211421EBB","asin":"B0DFYTJSDZ","swiggyId":"882936","blinkitId":""},{"product":"DRIP","colour":"Açaí Teal","sku":"FT211421ATB","asin":"B0DFYVRR4N","swiggyId":"","blinkitId":""},{"product":"DRIP","colour":"Nuuk Red","sku":"FT211421RDB","asin":"B0DFYVRGNL","swiggyId":"210447","blinkitId":""},{"product":"DRIP","colour":"Yuzu Yellow","sku":"FT211421YYB","asin":"B0DFYW993N","swiggyId":"385362","blinkitId":""},{"product":"FOLDE v1","colour":"Nordic white","sku":"FN112111WHB","asin":"B0CV5J495D","swiggyId":"","blinkitId":"10161443"},{"product":"FOLDE v1","colour":"Serene Grey","sku":"FN112111GYB","asin":"B0CVRQ96F2","swiggyId":"","blinkitId":"10196052"},{"product":"FOLDE v2","colour":"Serene Grey","sku":"FN111124GYB","asin":"B0DXPY4BH9","swiggyId":"172206","blinkitId":"10238517"},{"product":"FOLDE v2","colour":"Midsommar Rose","sku":"FN111124MRB","asin":"B0DXPYSYRY","swiggyId":"","blinkitId":""},{"product":"FOLDE v2","colour":"Aurora Grey","sku":"FN111124AGB","asin":"B0DXPZLHTJ","swiggyId":"","blinkitId":""},{"product":"FOLDE v2","colour":"Aurora Blue (Mondo Edition)","sku":"FN111124AUB","asin":"B0DXQ12Y35","swiggyId":"","blinkitId":""},{"product":"FOLDE v2","colour":"Arctic Blue","sku":"FN111124ABB","asin":"B0DXQ1Z5T8","swiggyId":"","blinkitId":""},{"product":"FOLDE v2","colour":"Nordic white","sku":"FN111124WHB","asin":"B0DXQ27MY1","swiggyId":"","blinkitId":""},{"product":"HALO v2","colour":"Nordic white","sku":"FN141224WHR","asin":"B0FLDC4XN9","swiggyId":"","blinkitId":""},{"product":"HALO v2","colour":"Midnight Black","sku":"FN141223BKR_FBA","asin":"B0DBJ19FBB","swiggyId":"382343","blinkitId":"10296117"},{"product":"KRUSH","colour":"Nuuk Red","sku":"FT241421RDB","asin":"B0DH54GVPJ","swiggyId":"224957","blinkitId":""},{"product":"KRUSH","colour":"Yuzu Yellow","sku":"FT241421YYB","asin":"B0DH557TT4","swiggyId":"558528","blinkitId":""},{"product":"KRUSH","colour":"Elderberry Black","sku":"FT241421EBB","asin":"B0DH55T54K","swiggyId":"","blinkitId":"10196678"},{"product":"KRUSH","colour":"Açaí Teal","sku":"FT241421ATB","asin":"B0DH56RBQR","swiggyId":"","blinkitId":"10171927"},{"product":"KRUSH 2 JAR","colour":"Yuzu Yellow","sku":"FT241421YYB_2","asin":"B0FNX2GJ3X","swiggyId":"","blinkitId":""},{"product":"KRUSH 2 JAR","colour":"Nuuk Red","sku":"FT241422RDB_2","asin":"B0FNX2M7CJ","swiggyId":"","blinkitId":""},{"product":"KRUSH 2 JAR","colour":"Elderberry Black","sku":"FT241422EBB_2","asin":"B0FPD2WQNG","swiggyId":"","blinkitId":""},{"product":"KRUSH 2 JAR","colour":"Açaí Teal","sku":"FT241422ATB","asin":"B0FPCZWS76","swiggyId":"","blinkitId":""},{"product":"LIT v1","colour":"Nordic white","sku":"FN112212WHR","asin":"B0CV5MMKV1","swiggyId":"","blinkitId":"10161444"},{"product":"LIT v1","colour":"Serene Grey","sku":"FN112212GYR","asin":"B0CVRJC4WW","swiggyId":"","blinkitId":"10196095"},{"product":"LIT v2","colour":"Matcha Green","sku":"FN121123MGR","asin":"B0DWMZSNDX","swiggyId":"","blinkitId":"10238516"},{"product":"LIT v2","colour":"Midsommar Rose","sku":"FN121123MPR","asin":"B0DWMZP6CG","swiggyId":"","blinkitId":""},{"product":"LIT v2","colour":"Nordic White","sku":"FN121123WHR","asin":"B0DWMXYZVC","swiggyId":"","blinkitId":""},{"product":"LIT v2","colour":"Serene Grey","sku":"FN121123GYR","asin":"B0DWN11193","swiggyId":"638763","blinkitId":"10238519"},{"product":"REN BEAM","colour":"Meteor Grey","sku":"VC181221MGB","asin":"B0DH82R1T7","swiggyId":"865009","blinkitId":""},{"product":"REN Go","colour":"Midnight Black","sku":"VC161151BKB","asin":"B0D1K91D1Z","swiggyId":"990260","blinkitId":"10161434"},{"product":"REN Go","colour":"Tundra Green","sku":"VC161151TGB","asin":"B0DH4L39SC","swiggyId":"","blinkitId":""},{"product":"Ren Pro","colour":"Meteor Grey","sku":"VC271527MGB","asin":"B0FGXRQFWD","swiggyId":"","blinkitId":""},{"product":"RĪZZ","colour":"Vogue Blue","sku":"GC251121VBB","asin":"B0DQL6WN4P","swiggyId":"","blinkitId":""},{"product":"RĪZZ","colour":"Couture Grey","sku":"GC251121CGB","asin":"B0DQL65R7J","swiggyId":"391044","blinkitId":"10268642"},{"product":"RĪZZ","colour":"Nuuk Red","sku":"GC251121RDB","asin":"B0DQL6YPZ4","swiggyId":"569198","blinkitId":"10269159"},{"product":"RĪZZ","colour":"Haute Matcha","sku":"GC251121HMB","asin":"B0DQL5YNWQ","swiggyId":"","blinkitId":""},{"product":"RĪZZ","colour":"Chic Rose","sku":"GC251121CRB","asin":"B0DQL52MRL","swiggyId":"","blinkitId":""},{"product":"STROM","colour":"Serene Grey","sku":"GS151121GYB","asin":"B0D4JYJYP6","swiggyId":"","blinkitId":"10238520"},{"product":"STROM","colour":"Nuuk Red","sku":"GS151121RDB","asin":"B0D4JXQGD7","swiggyId":"727998","blinkitId":""},{"product":"STROM","colour":"Nordic white","sku":"GS151121WHB","asin":"B0D47HBRXR","swiggyId":"","blinkitId":""},{"product":"Hot Blox","colour":"Midnight Black","sku":"HT361136MBS","asin":"B0FW5B57X5","swiggyId":"","blinkitId":"10266278"},{"product":"Hot Blox","colour":"Serene Grey","sku":"HT361136GYS","asin":"B0FW57H2V3","swiggyId":"","blinkitId":"10272029"},{"product":"Hot Bar","colour":"Blue","sku":"HT412739BLB","asin":"B0FXN6G8R4","swiggyId":"","blinkitId":""},{"product":"Hot Bar","colour":"Nuuk Red","sku":"HT412739RDB","asin":"B0FXN6XW6T","swiggyId":"323523","blinkitId":"10272031"},{"product":"Hot Bar","colour":"Grey","sku":"HT412739GYB","asin":"B0FXN7FQR5","swiggyId":"323523","blinkitId":"10272000"},{"product":"Brisk","colour":"Serene Grey","sku":"FT391237GYB","asin":"B0FXLKZ9ZH","swiggyId":"805739","blinkitId":"10272068"},{"product":"Brisk","colour":"Nuuk Red","sku":"FT391237RDB","asin":"B0FXLLB21N","swiggyId":"885860","blinkitId":"10289174"},{"product":"Brisk","colour":"Sesame Grey","sku":"FT391237SGB","asin":"B0FXLKG1XR","swiggyId":"","blinkitId":"10272030"},{"product":"Strom GO V2","colour":"Serene Grey","sku":"GS151122GYB","asin":"B0FV34C51P","swiggyId":"183180","blinkitId":""},{"product":"Strom GO V2","colour":"Nuuk Red","sku":"GS151122RDB","asin":"B0FV2WG2T2","swiggyId":"826724","blinkitId":"10166089"},{"product":"Strom GO V2","colour":"Santorini Blue","sku":"GS151122SBB","asin":"B0FVG2JPKR","swiggyId":"","blinkitId":""},{"product":"Strom GO V2","colour":"Capetown coral","sku":"GS151122CCB","asin":"B0FVG4DTPP","swiggyId":"","blinkitId":""},{"product":"Strom GO V2","colour":"Kyoto Matcha Green","sku":"GS151122MGB","asin":"B0FVG2V2JG","swiggyId":"","blinkitId":""},{"product":"Lit v3","colour":"Midsommar Rose","sku":"FN121126MPR","asin":"B0GNMLQ2KF","swiggyId":"","blinkitId":""},{"product":"Lit v3","colour":"Matcha Green","sku":"FN121126MGR","asin":"B0GNMLJ2KN","swiggyId":"","blinkitId":""},{"product":"Lit v3","colour":"Nordic White","sku":"FN121126WHR","asin":"B0GNMLGJVZ","swiggyId":"","blinkitId":""},{"product":"Lit v3","colour":"Serene Grey","sku":"FN121126GYR","asin":"B0GNMPM4VK","swiggyId":"","blinkitId":""},{"product":"Klip","colour":"Sakura Pink","sku":"FN281125SPB","asin":"B0GNMX3346","swiggyId":"","blinkitId":""},{"product":"Klip","colour":"Buttercup Yellow","sku":"FN281125BYB","asin":"B0GNN2NFHJ","swiggyId":"","blinkitId":""},{"product":"Klip","colour":"Matcha Green","sku":"FN281125MGB","asin":"B0GNMPKDTK","swiggyId":"452217","blinkitId":""},{"product":"Klip","colour":"Serene Grey","sku":"FN281125GYB","asin":"B0GNN1K4Q7","swiggyId":"","blinkitId":"10296121"},{"product":"Ren Pro + Wet Mop","colour":"Meteor Grey","sku":"VC271522MGB","asin":"B0GFMW5YXL","swiggyId":"","blinkitId":""},{"product":"Lit Pro","colour":"Dusk Blue","sku":"FN121427DBR","asin":"B0GP6KH5W9","swiggyId":"","blinkitId":""},{"product":"Lit Pro","colour":"Nordic white","sku":"FN121427WHR","asin":"B0GP679RWJ","swiggyId":"","blinkitId":""},{"product":"Lit Pro","colour":"Serene Grey","sku":"FN121427GYR","asin":"B0GP6SRNQV","swiggyId":"","blinkitId":""},{"product":"Halo linked","colour":"Nordic white","sku":"FN141224WHS","asin":"B0GP6W79KC","swiggyId":"","blinkitId":""},{"product":"Halo linked","colour":"Serene Grey","sku":"FN141224BKS","asin":"B0GP67F314","swiggyId":"","blinkitId":""}];
@@ -1455,34 +1501,42 @@ function drawChart(product,color,filterChannel=''){
 function handleUpload(input,channel,lastUpdateId,successId){
   const file=input.files[0];if(!file)return;
   const reader=new FileReader();
-  reader.onload=e=>{
+  reader.onload=async e=>{
     try{
-      const wb=XLSX.read(e.target.result,{type:'array'});
+      const arrayBuffer=e.target.result;
+      const wb=XLSX.read(arrayBuffer,{type:'array'});
       if(channel==='amazon')parseAmazonBuybox(wb);else parseGenericChannel(wb,channel);
+
       const today=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
       document.getElementById(lastUpdateId).textContent='Updated: '+today;
       document.getElementById(successId).classList.add('show');
 
-      // Try to detect a data date from the file content
       const detectedDate=detectDataDateFromWorkbook(wb,channel);
       const ch=channel.toLowerCase();
+      const dataDate=detectedDate||today;
+      const dateSrc=detectedDate?'file':'now';
 
-      if(detectedDate){
-        // Auto-detected from file content
-        channelDataDates[ch]={date:detectedDate,src:'file'};
-        channelUploadDates[ch]=detectedDate;
-        updateUploadDateUI(ch,detectedDate,'auto');
-        showToast(`${channel} data loaded · ${channelData[ch].length} SKUs · Data date: ${detectedDate}`);
-      }else{
-        // Fall back to today as upload date
-        channelDataDates[ch]={date:today,src:'now'};
-        channelUploadDates[ch]=today;
-        updateUploadDateUI(ch,today,'now');
-        showToast(`${channel} data loaded · ${channelData[ch].length} SKUs`);
-      }
+      channelDataDates[ch]={date:dataDate,src:dateSrc};
+      channelUploadDates[ch]=dataDate;
+      updateUploadDateUI(ch,dataDate,dateSrc);
       applyFilters();
-    }catch(err){showToast('Error parsing file: '+err.message);}
-  };reader.readAsArrayBuffer(file);
+
+      // Push to Supabase so all users see the latest data
+      showToast(channel+': uploading to cloud…');
+      const ext=file.name.split('.').pop().toLowerCase();
+      const mime=ext==='csv'?'text/csv':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      const ts=Date.now();
+      const storagePath=ch+'/'+ts+'_'+file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+
+      await sbUploadFile(storagePath,arrayBuffer,mime);
+      await sbInsertMeta({channel:ch,filename:file.name,storage_path:storagePath,data_date:dataDate,data_date_src:dateSrc,uploaded_by:null});
+      showToast(channel+' data saved · '+channelData[ch].length+' SKUs · visible to everyone ✓');
+    }catch(err){
+      console.error(err);
+      showToast('Upload error: '+err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
 }
 
 // Try to extract a data date from the workbook (checks common column/sheet name patterns)
@@ -1673,12 +1727,55 @@ function dropFile(e,fid,z,ch){e.preventDefault();dragLeave(z);const f=e.dataTran
 async function pushToSheet(action,data){if(!CONFIG.WEB_APP_URL||CONFIG.WEB_APP_URL.includes('YOUR_'))return;try{await fetch(CONFIG.WEB_APP_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,data})});}catch(e){}}
 async function fetchFromSheet(){if(!CONFIG.SHEET_URL||CONFIG.SHEET_URL.includes('YOUR_'))return;try{const res=await fetch(CONFIG.SHEET_URL);const json=await res.json();const rows=json.feed?.entry||[];const fetched=rows.map((e,i)=>{const c=k=>e['gsx$'+k]?.$t||'';return{id:i+1,product:c('product'),color:c('color'),channel:c('channel'),oldPrice:Number(c('oldprice'))||null,newPrice:Number(c('newprice'))||null,changeDate:c('changedate'),approvedBy:c('approvedby'),reason:c('reason'),revisit:c('revisitdate')||null,source:c('source')||'MANUAL',ts:c('timestamp')||new Date().toISOString()};}).filter(r=>r.product);if(fetched.length){priceLog=fetched;nextLogId=Math.max(...fetched.map(r=>r.id))+1;applyFilters();}}catch(e){}}
 
+// ── SUPABASE: LOAD CHANNEL DATA ON PAGE OPEN ──────
+// On every page load, fetch the latest uploaded file per channel from Supabase,
+// parse it in-browser, and render exactly as if the user had just uploaded it.
+async function loadChannelDataFromSupabase(){
+  const indicator=document.getElementById('lastSync');
+  try{
+    indicator.textContent='Syncing…';
+    const latest=await sbGetLatestPerChannel();
+    if(!latest.length){indicator.textContent=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short'});return;}
+
+    for(const row of latest){
+      const ch=row.channel.toLowerCase();
+      try{
+        const buf=await sbGetFileBytes(row.storage_path);
+        const wb=XLSX.read(buf,{type:'array'});
+        if(ch==='amazon')parseAmazonBuybox(wb);else parseGenericChannel(wb,ch);
+
+        const displayDate=row.data_date||new Date(row.uploaded_at).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+        const src=row.data_date_src||'now';
+
+        channelDataDates[ch]={date:displayDate,src};
+        channelUploadDates[ch]=displayDate;
+
+        // Update upload card UI
+        const prefix=ch==='amazon'?'amz':ch;
+        const lu=document.getElementById(prefix+'LastUpdate')||document.getElementById(ch+'LastUpdate');
+        if(lu)lu.textContent='Updated: '+displayDate;
+        const suc=document.getElementById(prefix+'Success')||document.getElementById(ch+'Success');
+        if(suc)suc.classList.add('show');
+        updateUploadDateUI(ch,displayDate,src);
+      }catch(fileErr){
+        console.warn('Could not load '+ch+' file:',fileErr.message);
+      }
+    }
+    applyFilters();
+    indicator.textContent='Synced '+new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short'});
+  }catch(e){
+    console.warn('Supabase sync failed:',e.message);
+    indicator.textContent=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short'});
+  }
+}
+
 // ── INIT ─────────────────────────────────────────
 document.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('lastSync').textContent=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short'});
   populateProductDropdown();
   applyFilters();
   fetchFromSheet();
+  loadChannelDataFromSupabase();
 });
 </script>
 </body>
