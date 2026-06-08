@@ -1,0 +1,1452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NUUK · Price Control</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink:#1a1a2e;--ink-2:#3d3d55;--ink-3:#72728a;--ink-4:#a8a8c0;
+  --paper:#f8f8fc;--paper-2:#f0f0f6;--paper-3:#e8e8f0;
+  --line:rgba(26,26,46,.1);--line-2:rgba(26,26,46,.06);
+  --green:#1a7a4a;--green-bg:#e6f5ee;--red:#c0392b;--red-bg:#faeaea;
+  --amber:#7a5800;--amber-bg:#fef5da;--blue:#1a4fa0;--blue-bg:#e8effa;
+  --purple:#6c5ce7;--purple-bg:#f0eeff;--purple-light:#ede9ff;
+  --revisit-bg:#fff0ef;--revisit-border:#f5c6c2;
+  --mono:'DM Mono',monospace;--sans:'Inter',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--sans);background:var(--paper);color:var(--ink);min-height:100vh;font-size:13px;line-height:1.5;}
+
+/* HEADER */
+.header{border-bottom:1px solid var(--line);padding:0 28px;display:flex;align-items:center;justify-content:space-between;height:52px;background:#fff;position:sticky;top:0;z-index:200;}
+.logo{font-size:15px;font-weight:700;letter-spacing:-.02em;color:var(--ink);display:flex;align-items:center;gap:8px;}
+.logo-pill{background:var(--purple);color:#fff;font-size:10px;font-weight:600;padding:2px 7px;border-radius:999px;letter-spacing:.04em;}
+.header-right{display:flex;align-items:center;gap:12px;}
+.sync-status{font-family:var(--mono);font-size:11px;color:var(--ink-3);display:flex;align-items:center;gap:5px;}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* BUTTONS */
+.btn{font-family:var(--sans);font-size:12px;font-weight:500;padding:6px 14px;border-radius:7px;border:1px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer;transition:all .13s;}
+.btn:hover{background:var(--paper-2);}
+.btn-primary{background:var(--purple);color:#fff;border-color:var(--purple);}
+.btn-primary:hover{background:#5a4bd1;}
+.btn-danger{background:#faeaea;color:var(--red);border-color:#f5c6c2;}
+.btn-danger:hover{background:#f9d0d0;}
+
+/* TABS */
+.tabs-bar{border-bottom:1px solid var(--line);padding:0 28px;display:flex;align-items:flex-end;background:#fff;position:sticky;top:52px;z-index:190;}
+.tab-btn{font-family:var(--sans);font-size:13px;font-weight:500;padding:13px 18px 11px;border:none;background:none;color:var(--ink-3);cursor:pointer;border-bottom:2px solid transparent;transition:all .13s;white-space:nowrap;}
+.tab-btn:hover{color:var(--ink);}
+.tab-btn.active{color:var(--purple);border-bottom-color:var(--purple);font-weight:600;}
+.tab-count{font-family:var(--mono);font-size:10px;background:var(--paper-2);border:1px solid var(--line);border-radius:4px;padding:1px 5px;margin-left:5px;color:var(--ink-4);}
+.tab-btn.active .tab-count{background:var(--purple-bg);color:var(--purple);border-color:var(--purple-light);}
+
+/* STAT CARDS */
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;padding:18px 28px 0;}
+.stat-card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;}
+.stat-label{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-3);margin-bottom:5px;}
+.stat-value{font-size:26px;font-weight:700;letter-spacing:-.03em;color:var(--ink);line-height:1;}
+.stat-value.green{color:var(--green);}
+.stat-value.red{color:var(--red);}
+.stat-sub{font-family:var(--mono);font-size:10px;color:var(--ink-4);margin-top:3px;}
+
+/* SLICER (product chips, below stat cards) */
+.slicer-bar{background:#fff;border-bottom:1px solid var(--line);padding:10px 28px;display:flex;flex-direction:column;gap:7px;}
+.slicer-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.slicer-label{font-family:var(--mono);font-size:10px;font-weight:500;color:var(--ink-4);text-transform:uppercase;letter-spacing:.08em;min-width:56px;flex-shrink:0;}
+.slicer-chips{display:flex;flex-wrap:wrap;gap:5px;}
+.chip{font-family:var(--sans);font-size:12px;font-weight:500;padding:4px 12px;border-radius:999px;border:1px solid var(--line);background:var(--paper);color:var(--ink-2);cursor:pointer;transition:all .12s;white-space:nowrap;}
+.chip:hover{border-color:var(--purple);color:var(--purple);}
+.chip.active{background:var(--purple);color:#fff;border-color:var(--purple);}
+
+/* STICKY SLICER — sits below tabs (top:98px = header 52 + tabs 46) */
+.sticky-slicer{position:sticky;top:98px;z-index:180;}
+
+/* MAIN */
+.main{padding:20px 28px;}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+
+/* TOOLBAR */
+.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+.search-wrap{position:relative;flex:1;min-width:180px;max-width:300px;}
+.search-wrap svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--ink-4);pointer-events:none;}
+.search-input{font-family:var(--mono);font-size:12px;width:100%;padding:7px 9px 7px 30px;border:1px solid var(--line);border-radius:7px;background:var(--paper);color:var(--ink);outline:none;transition:border-color .13s;}
+.search-input:focus{border-color:var(--purple);}
+.filter-select{font-family:var(--sans);font-size:12px;font-weight:500;padding:7px 11px;border:1px solid var(--line);border-radius:7px;background:var(--paper);color:var(--ink);cursor:pointer;outline:none;}
+.ml-auto{margin-left:auto;}
+/* TABLE */
+.table-wrap{
+  border:1px solid var(--line);
+  border-radius:10px;
+  overflow-x:auto;
+  overflow-y:auto;
+  max-height:calc(100vh - 240px);
+  background:#fff;
+}
+/* On Tab 1, stat cards are visible so reduce height further */
+#tab1 .table-wrap{max-height:calc(100vh - 390px);}
+
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead{position:sticky;top:0;z-index:10;background:var(--paper-2);}
+thead tr{border-bottom:1px solid var(--line);}
+th{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-3);padding:9px 13px;text-align:left;font-weight:400;white-space:nowrap;}
+th.sortable{cursor:pointer;user-select:none;}
+th.sortable:hover{color:var(--purple);}
+th.sort-asc::after{content:' ↑';color:var(--purple);}
+th.sort-desc::after{content:' ↓';color:var(--purple);}
+td{padding:10px 13px;border-bottom:1px solid var(--line-2);vertical-align:middle;color:var(--ink-2);}
+tr:last-child td{border-bottom:none;}
+tr:not(.detail-row):hover td{background:var(--paper);}
+
+/* REVISIT ALERT ROW */
+tr.has-revisit td{background:var(--revisit-bg) !important;}
+tr.has-revisit:hover td{background:#ffe8e6 !important;}
+.revisit-alert{display:inline-flex;align-items:center;gap:4px;font-family:var(--mono);font-size:10px;color:var(--red);background:var(--red-bg);border:1px solid var(--revisit-border);border-radius:4px;padding:2px 6px;margin-left:6px;}
+
+/* NA CELL — red for missing channel presence */
+.na-cell{font-family:var(--mono);font-size:12px;font-weight:500;color:var(--red);opacity:.7;}
+
+/* LOCK ICON on rows */
+.lock-btn{background:none;border:none;cursor:pointer;color:var(--ink-4);padding:2px 4px;border-radius:4px;font-size:13px;line-height:1;transition:all .13s;}
+.lock-btn:hover{color:var(--purple);background:var(--purple-bg);}
+.lock-btn.locked{color:var(--amber);}
+
+/* SPLIT SEARCH toolbar */
+.toolbar-split{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+.search-wrap-sm{position:relative;min-width:130px;max-width:180px;}
+.search-wrap-sm svg{position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--ink-4);pointer-events:none;}
+.search-wrap-sm input{font-family:var(--mono);font-size:11px;width:100%;padding:6px 8px 6px 26px;border:1px solid var(--line);border-radius:7px;background:var(--paper);color:var(--ink);outline:none;transition:border-color .13s;}
+.search-wrap-sm input:focus{border-color:var(--purple);}
+
+/* CHANNEL ENTRY DROPDOWN — consistent with main row */
+.channel-entry-main-row{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;}
+.channel-entry-left{display:flex;align-items:baseline;gap:10px;flex:1;}
+.channel-entry-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.channel-meta-date{font-family:var(--mono);font-size:11px;color:var(--ink-3);white-space:nowrap;}
+.channel-meta-approver{font-size:13px;font-weight:600;color:var(--ink-2);white-space:nowrap;}
+
+/* PRICE CELLS */
+.price-block{display:flex;flex-direction:column;align-items:flex-end;gap:1px;}
+.price-main{font-family:var(--mono);font-size:13px;font-weight:500;color:var(--ink);}
+.price-main.na{color:var(--ink-4);font-weight:300;}
+.price-prev{font-family:var(--mono);font-size:10px;font-weight:300;display:flex;align-items:center;gap:3px;}
+.price-prev.up{color:var(--red);}
+.price-prev.down{color:var(--green);}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:3px;font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:4px;font-weight:400;white-space:nowrap;}
+.badge-green{background:var(--green-bg);color:var(--green);}
+.badge-red{background:var(--red-bg);color:var(--red);}
+.badge-amber{background:var(--amber-bg);color:var(--amber);}
+.badge-blue{background:var(--blue-bg);color:var(--blue);}
+.badge-gray{background:var(--paper-3);color:var(--ink-3);}
+.badge-purple{background:var(--purple-bg);color:var(--purple);}
+.date-cell{font-family:var(--mono);font-size:11px;color:var(--ink-3);white-space:nowrap;}
+.text-right{text-align:right;}
+
+/* CHEVRON */
+.chevron-cell{padding:10px 4px 10px 13px;width:28px;vertical-align:middle;}
+.chevron-btn{background:none;border:none;cursor:pointer;color:var(--ink-4);display:flex;align-items:center;padding:3px;border-radius:4px;transition:all .13s;line-height:0;}
+.chevron-btn:hover{color:var(--purple);background:var(--purple-bg);}
+.chevron-btn svg{transition:transform .2s ease;}
+.chevron-btn.open svg{transform:rotate(90deg);}
+tr.detail-row{display:none;}
+tr.detail-row.open{display:table-row;}
+tr.detail-row td{padding:0;border-bottom:1px solid var(--line);background:var(--paper);}
+.detail-inner{padding:12px 12px 12px 40px;display:flex;flex-direction:column;gap:8px;}
+
+/* CHANNEL ENTRY CARDS (Tab 1 dropdown) */
+.channel-entry{display:flex;align-items:flex-start;gap:14px;padding:11px 14px;background:#fff;border:1px solid var(--line);border-radius:8px;}
+.channel-entry-badge{font-family:var(--mono);font-size:10px;font-weight:500;padding:3px 9px;border-radius:5px;white-space:nowrap;min-width:60px;text-align:center;flex-shrink:0;margin-top:1px;}
+.ch-amazon{background:#fff5e0;color:#7a4800;border:1px solid rgba(122,72,0,.12);}
+.ch-swiggy{background:#fff0f0;color:#a02020;border:1px solid rgba(160,32,32,.12);}
+.ch-blinkit{background:#f2fce8;color:#386010;border:1px solid rgba(56,96,16,.12);}
+.ch-website{background:#eff0ff;color:#3730a3;border:1px solid rgba(55,48,163,.12);}
+.channel-entry-prices{display:flex;align-items:baseline;gap:8px;flex-shrink:0;min-width:130px;}
+.channel-entry-old{font-family:var(--mono);font-size:11px;color:var(--ink-4);text-decoration:line-through;}
+.channel-entry-new{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--ink);}
+.channel-entry-arrow{font-size:10px;color:var(--ink-4);}
+.channel-entry-meta{flex:1;display:flex;flex-direction:column;gap:3px;}
+.channel-entry-reason{font-size:12px;color:var(--ink-2);line-height:1.5;}
+.channel-entry-info{font-family:var(--mono);font-size:10px;color:var(--ink-4);display:flex;gap:12px;flex-wrap:wrap;margin-top:2px;}
+.channel-entry-info span{white-space:nowrap;}
+
+/* EDIT/DELETE BTNS */
+.row-actions{display:flex;gap:5px;flex-shrink:0;}
+.edit-btn,.del-btn{font-family:var(--sans);font-size:11px;padding:3px 8px;border:1px solid var(--line);border-radius:5px;background:var(--paper);cursor:pointer;transition:all .13s;}
+.edit-btn{color:var(--ink-3);}
+.edit-btn:hover{background:var(--purple-bg);color:var(--purple);border-color:var(--purple-light);}
+.del-btn{color:var(--red);}
+.del-btn:hover{background:var(--red-bg);border-color:var(--revisit-border);}
+.chart-btn{font-family:var(--sans);font-size:11px;padding:3px 8px;border:1px solid var(--line);border-radius:5px;background:var(--paper);color:var(--ink-3);cursor:pointer;transition:all .13s;display:flex;align-items:center;gap:4px;flex-shrink:0;}
+.chart-btn:hover{background:var(--purple-bg);color:var(--purple);border-color:var(--purple-light);}
+
+/* DRAWER */
+.drawer-overlay{display:none;position:fixed;inset:0;background:rgba(26,26,46,.25);z-index:300;backdrop-filter:blur(2px);}
+.drawer-overlay.open{display:block;}
+.drawer{position:fixed;right:0;top:0;bottom:0;width:420px;background:#fff;border-left:1px solid var(--line);z-index:301;transform:translateX(100%);transition:transform .22s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;}
+.drawer.open{transform:translateX(0);}
+.drawer-header{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;}
+.drawer-title{font-size:14px;font-weight:600;}
+.drawer-close{width:26px;height:26px;border:1px solid var(--line);border-radius:6px;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--ink-3);font-size:14px;transition:all .13s;}
+.drawer-close:hover{background:var(--paper-2);color:var(--ink);}
+.drawer-body{flex:1;overflow-y:auto;padding:22px;}
+.drawer-footer{padding:14px 22px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end;}
+.form-group{margin-bottom:14px;}
+.form-label{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-3);display:block;margin-bottom:5px;}
+.form-input,.form-select,.form-textarea{font-family:var(--mono);font-size:12px;width:100%;padding:8px 11px;border:1px solid var(--line);border-radius:7px;background:var(--paper);color:var(--ink);outline:none;transition:border-color .13s;}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--purple);}
+.form-textarea{resize:vertical;min-height:76px;font-family:var(--sans);}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.form-section{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--ink-4);margin:18px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line-2);}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(26,26,46,.35);z-index:400;align-items:center;justify-content:center;backdrop-filter:blur(3px);}
+.modal-overlay.open{display:flex;}
+.modal{background:#fff;border:1px solid var(--line);border-radius:12px;width:540px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 40px rgba(0,0,0,.1);}
+.modal-header{padding:18px 22px 14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;}
+.modal-body{padding:22px;}
+.modal-footer{padding:14px 22px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end;}
+
+/* SOP BANNER */
+.sop-banner{background:var(--paper-2);border:1px solid var(--line);border-radius:8px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:flex-start;gap:14px;}
+.sop-icon{font-size:16px;margin-top:1px;flex-shrink:0;}
+.sop-body{flex:1;}
+.sop-title{font-size:12px;font-weight:600;margin-bottom:3px;}
+.sop-text{font-family:var(--mono);font-size:11px;color:var(--ink-3);line-height:1.7;}
+.sop-email{color:var(--purple);font-weight:500;}
+.cc-field{display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid var(--line-2);}
+.cc-label{font-family:var(--mono);font-size:10px;color:var(--ink-4);font-weight:500;white-space:nowrap;}
+.cc-input{font-family:var(--mono);font-size:12px;flex:1;padding:5px 9px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);outline:none;transition:border-color .13s;}
+.cc-input:focus{border-color:var(--purple);}
+.cc-locked-val{font-family:var(--mono);font-size:12px;color:var(--purple);font-weight:500;}
+.cc-lock-btn{font-size:11px;padding:4px 9px;border:1px solid var(--line);border-radius:5px;background:var(--paper);color:var(--ink-3);cursor:pointer;font-family:var(--sans);font-weight:500;white-space:nowrap;transition:all .13s;}
+.cc-lock-btn:hover{background:var(--purple-bg);color:var(--purple);border-color:var(--purple);}
+
+/* SECTION HEADING */
+.section-heading{display:flex;align-items:baseline;gap:9px;margin-bottom:18px;}
+.section-heading h2{font-size:15px;font-weight:700;letter-spacing:-.02em;}
+.section-heading .sub{font-family:var(--mono);font-size:11px;color:var(--ink-4);}
+
+/* CHANNEL PARITY */
+.avail-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:4px;vertical-align:middle;}
+.avail-dot.green{background:var(--green);}
+.avail-dot.red{background:var(--red);}
+.deviation-cell{font-family:var(--mono);font-size:12px;font-weight:500;}
+.dev-green{color:var(--green);}
+.dev-red{color:var(--red);}
+.dev-amber{color:var(--amber);}
+
+/* UPLOAD */
+.upload-zone{border:1.5px dashed var(--line);border-radius:8px;padding:18px;text-align:center;transition:all .13s;cursor:pointer;background:var(--paper);}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--purple);background:var(--purple-bg);}
+.upload-zone input[type=file]{display:none;}
+.upload-zone-label{font-size:12px;font-weight:600;color:var(--ink-2);margin-bottom:3px;}
+.upload-zone-sub{font-family:var(--mono);font-size:10px;color:var(--ink-4);}
+.upload-icon{font-size:20px;margin-bottom:7px;color:var(--ink-4);}
+.upload-success{font-family:var(--mono);font-size:11px;color:var(--green);margin-top:5px;display:none;}
+.upload-success.show{display:block;}
+.channel-uploads{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:24px;}
+.channel-upload-card{border:1px solid var(--line);border-radius:10px;overflow:hidden;}
+.channel-upload-top{padding:10px 14px;background:var(--paper-2);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;}
+.channel-upload-name{font-size:12px;font-weight:600;}
+.last-updated{font-family:var(--mono);font-size:10px;color:var(--ink-4);}
+.channel-upload-body{padding:10px 14px;}
+
+/* MASTER SKU TABLE */
+.master-sku-wrap{overflow-x:auto;}
+.sku-id-pill{font-family:var(--mono);font-size:10px;background:var(--paper-3);color:var(--ink-3);padding:2px 7px;border-radius:4px;display:inline-block;}
+
+/* TOAST */
+.toast{position:fixed;bottom:22px;right:22px;background:var(--ink);color:var(--paper);border-radius:8px;padding:11px 16px;font-size:13px;font-weight:500;z-index:600;transform:translateY(70px);opacity:0;transition:all .28s cubic-bezier(.4,0,.2,1);max-width:300px;}
+.toast.show{transform:translateY(0);opacity:1;}
+
+/* CHART MODAL */
+.chart-modal{width:680px;max-width:96vw;}
+.chart-modal-header{padding:18px 22px 14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;}
+.chart-modal-body{padding:22px;}
+.chart-title{font-size:14px;font-weight:600;}
+.chart-subtitle{font-family:var(--mono);font-size:11px;color:var(--ink-3);margin-top:2px;}
+.chart-legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;}
+.chart-legend-item{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;color:var(--ink-3);}
+.legend-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0;}
+
+/* FULL LOG TABLE specifics */
+.reason-cell{font-size:12px;color:var(--ink-2);max-width:280px;min-width:180px;white-space:normal;line-height:1.5;}
+
+/* CHANNEL DATE BUBBLES */
+.channel-bubbles{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+.ch-bubble{display:flex;align-items:center;gap:7px;padding:5px 12px 5px 8px;border-radius:999px;border:1px solid transparent;}
+.ch-bubble-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.ch-bubble-name{font-family:var(--sans);font-size:11px;font-weight:600;white-space:nowrap;}
+.ch-bubble-date{font-family:var(--mono);font-size:10px;white-space:nowrap;}
+.ch-bubble-amazon{background:#fff8ec;border-color:rgba(122,72,0,.15);}
+.ch-bubble-amazon .ch-bubble-dot{background:#f59e0b;}
+.ch-bubble-amazon .ch-bubble-name{color:#7a4800;}
+.ch-bubble-amazon .ch-bubble-date{color:#a86200;}
+.ch-bubble-swiggy{background:#fff4f4;border-color:rgba(160,32,32,.15);}
+.ch-bubble-swiggy .ch-bubble-dot{background:#ef4444;}
+.ch-bubble-swiggy .ch-bubble-name{color:#a02020;}
+.ch-bubble-swiggy .ch-bubble-date{color:#b83030;}
+.ch-bubble-blinkit{background:#f4fce8;border-color:rgba(56,96,16,.15);}
+.ch-bubble-blinkit .ch-bubble-dot{background:#22c55e;}
+.ch-bubble-blinkit .ch-bubble-name{color:#386010;}
+.ch-bubble-blinkit .ch-bubble-date{color:#4a7a1a;}
+.ch-bubble-website{background:#f0f0ff;border-color:rgba(55,48,163,.15);}
+.ch-bubble-website .ch-bubble-dot{background:#6c5ce7;}
+.ch-bubble-website .ch-bubble-name{color:#3730a3;}
+.ch-bubble-website .ch-bubble-date{color:#4c46b8;}
+.ch-bubble-nodata{opacity:.5;}
+.ch-bubble-nodata .ch-bubble-date{font-style:italic;}
+/* COLOURED TH FOR CHANNEL COLUMNS — pill style matching bubbles */
+.th-amazon,.th-swiggy,.th-blinkit,.th-website{
+  border-radius:6px;
+  padding-left:10px !important;
+  padding-right:10px !important;
+}
+.th-amazon{color:#7a4800 !important;background:#fff8ec;}
+.th-swiggy{color:#a02020 !important;background:#fff4f4;}
+.th-blinkit{color:#386010 !important;background:#f4fce8;}
+.th-website{color:#3730a3 !important;background:#f0f0ff;}
+
+/* MISC */
+.nowrap{white-space:nowrap;}
+.channel-col{min-width:88px;}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="logo">NUUK <span class="logo-pill">PRICING</span></div>
+  <div class="header-right">
+    <div class="sync-status"><span class="sync-dot"></span><span id="lastSync">Live</span></div>
+    <button class="btn" onclick="openAddRow()">+ Add entry</button>
+  </div>
+</header>
+
+<!-- TABS -->
+<nav class="tabs-bar">
+  <button class="tab-btn active" onclick="switchTab('tab1',this)">Latest Changes <span class="tab-count" id="cnt1">—</span></button>
+  <button class="tab-btn" onclick="switchTab('tab2',this)">Full Log <span class="tab-count" id="cnt2">—</span></button>
+  <button class="tab-btn" onclick="switchTab('tab3',this)">Price vs Channels <span class="tab-count" id="cnt3">—</span></button>
+  <button class="tab-btn" onclick="switchTab('tab4',this)">Channel Parity <span class="tab-count" id="cnt4">—</span></button>
+  <button class="tab-btn" onclick="switchTab('tab5',this)">Master SKU <span class="tab-count" id="cnt5">—</span></button>
+</nav>
+
+<!-- STAT CARDS (Tab 1 only, shown outside main so slicer can go below) -->
+<div id="t1StatsWrap" class="stats-row"></div>
+
+<!-- SLICER BAR — sticky below tabs, product chips only -->
+<div class="sticky-slicer slicer-bar" id="slicerBar">
+  <div class="slicer-row">
+    <span class="slicer-label">PRODUCT</span>
+    <div class="slicer-chips" id="productChips"></div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- TAB 1: LATEST CHANGES -->
+  <div id="tab1" class="tab-panel active">
+    <div class="toolbar-split">
+      <div class="search-wrap-sm">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input id="t1SearchProd" placeholder="Product / color" oninput="applyFilters()">
+      </div>
+      <div class="search-wrap-sm">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input id="t1SearchDate" placeholder="Date (e.g. May)" oninput="applyFilters()">
+      </div>
+      <div class="search-wrap-sm">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input id="t1SearchApprover" placeholder="Approved by" oninput="applyFilters()">
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table id="t1Table">
+        <thead><tr>
+          <th style="width:28px"></th>
+          <th class="sortable" onclick="sortTable('t1','product')">Product</th>
+          <th class="sortable" onclick="sortTable('t1','color')">Color</th>
+          <th class="text-right th-amazon">Amazon</th>
+          <th class="text-right th-swiggy">Swiggy</th>
+          <th class="text-right th-blinkit">Blinkit</th>
+          <th class="text-right th-website">Website</th>
+          <th class="sortable text-right" onclick="sortTable('t1','date')">Last Changed</th>
+          <th>Approved By</th>
+          <th style="width:60px"></th>
+        </tr></thead>
+        <tbody id="t1Body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB 2: FULL LOG -->
+  <div id="tab2" class="tab-panel">
+    <div class="sop-banner">
+      <div class="sop-icon">📧</div>
+      <div class="sop-body">
+        <div class="sop-title">How price changes are captured</div>
+        <div class="sop-text">
+          Send a structured email to <span class="sop-email">prices@nuuk.in</span> with subject <span class="sop-email">PRICE CHANGE - [Product] - [Color or ALL] - [Channel or ALL]</span>.
+          <span style="cursor:pointer;color:var(--purple);margin-left:6px;" onclick="showEmailTemplate()">View template →</span>
+        </div>
+        <div class="cc-field" id="ccField">
+          <span class="cc-label">CC FOR APPROVALS:</span>
+          <span id="ccDisplay" class="cc-locked-val" style="color:var(--ink-4);">not set</span>
+          <button class="cc-lock-btn" id="ccLockBtn" onclick="handleCCAction()">Set email</button>
+        </div>
+      </div>
+    </div>
+    <div class="toolbar-split">
+      <div class="search-wrap-sm">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input id="t2SearchProd" placeholder="Product / color" oninput="applyFilters()">
+      </div>
+      <div class="search-wrap-sm">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input id="t2SearchDate" placeholder="Date (e.g. May)" oninput="applyFilters()">
+      </div>
+      <div class="search-wrap-sm">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input id="t2SearchApprover" placeholder="Approved by" oninput="applyFilters()">
+      </div>
+      <select class="filter-select" id="t2ChannelFilter" onchange="applyFilters()" style="font-size:12px;">
+        <option value="">All channels</option>
+        <option value="Amazon">Amazon</option>
+        <option value="Swiggy">Swiggy</option>
+        <option value="Blinkit">Blinkit</option>
+        <option value="Website">Website</option>
+      </select>
+      <div class="ml-auto"><button class="btn btn-primary" onclick="openAddRow()">+ Add entry</button></div>
+    </div>
+    <div class="table-wrap">
+      <table id="t2Table">
+        <thead><tr>
+          <th class="sortable" onclick="sortTable('t2','product')">Product</th>
+          <th class="sortable" onclick="sortTable('t2','color')">Color</th>
+          <th>Channel</th>
+          <th class="text-right">Old Price</th>
+          <th class="text-right">New Price</th>
+          <th class="sortable" onclick="sortTable('t2','date')">Changed</th>
+          <th>Approved By</th>
+          <th class="reason-cell" style="min-width:220px;">Reason</th>
+          <th>Revisit</th>
+          <th>Source</th>
+          <th style="width:80px;"></th>
+        </tr></thead>
+        <tbody id="t2Body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB 3: PRICE VS CHANNELS -->
+  <div id="tab3" class="tab-panel">
+    <div class="section-heading">
+      <h2>Approved Price vs Channel Average</h2>
+      <span class="sub">Deviation from mean of live channel prices</span>
+    </div>
+    <div class="toolbar-split">
+      <div class="search-wrap-sm">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input id="t3SearchProd" placeholder="Product / color" oninput="applyFilters()">
+      </div>
+      <select class="filter-select" id="t3DevFilter" onchange="applyFilters()">
+        <option value="">All deviations</option>
+        <option value="ok">Within ±5%</option>
+        <option value="warn">±5–15%</option>
+        <option value="alert">Above ±15%</option>
+      </select>
+    </div>
+    <div class="channel-bubbles" id="t3Bubbles"></div>
+    <div class="table-wrap">
+      <table id="t3Table">
+        <thead>
+          <tr>
+            <th class="sortable" onclick="sortTable('t3','product')">Product</th>
+            <th class="sortable" onclick="sortTable('t3','color')">Color</th>
+            <th class="text-right">Approved Price</th>
+            <th class="text-right th-amazon">Amazon</th>
+            <th class="text-right th-swiggy">Swiggy</th>
+            <th class="text-right th-blinkit">Blinkit</th>
+            <th class="text-right th-website">Website</th>
+            <th class="text-right">Channel Avg</th>
+            <th class="sortable text-right" onclick="sortTable('t3','deviation')">Dev %</th>
+          </tr>
+        </thead>
+        <tbody id="t3Body"></tbody>
+      </table>
+    </div>
+    <div style="margin-top:10px;display:flex;gap:16px;font-family:var(--mono);font-size:10px;color:var(--ink-4);">
+      <span><span class="badge badge-green" style="margin-right:4px;">●</span>Within ±5%</span>
+      <span><span class="badge badge-amber" style="margin-right:4px;">●</span>±5–15%</span>
+      <span><span class="badge badge-red" style="margin-right:4px;">●</span>Above ±15%</span>
+      <span style="margin-left:auto;">Swiggy, Blinkit &amp; Website data not yet loaded · upload in Channel Parity tab</span>
+    </div>
+  </div>
+
+  <!-- TAB 4: CHANNEL PARITY -->
+  <div id="tab4" class="tab-panel">
+    <div class="section-heading"><h2>Channel Price Parity</h2><span class="sub">Compare listed prices across platforms</span></div>
+    <div class="channel-uploads">
+      <div class="channel-upload-card">
+        <div class="channel-upload-top"><span class="channel-upload-name">Amazon</span><span id="amzLastUpdate" class="last-updated">Updated: 04 Jun 2026</span></div>
+        <div class="channel-upload-body">
+          <div class="upload-zone" id="amzZone" onclick="document.getElementById('amzFile').click()" ondragover="dragOver(event,'amzZone')" ondragleave="dragLeave('amzZone')" ondrop="dropFile(event,'amzFile','amzZone','amazon')">
+            <input type="file" id="amzFile" accept=".xlsx,.xls" onchange="handleUpload(this,'amazon','amzLastUpdate','amzSuccess')">
+            <div class="upload-icon">⬆</div><div class="upload-zone-label">Upload Buybox Report</div>
+            <div class="upload-zone-sub">.xlsx · Nuuk Report format</div><div class="upload-success" id="amzSuccess">✓ File loaded</div>
+          </div>
+        </div>
+      </div>
+      <div class="channel-upload-card">
+        <div class="channel-upload-top"><span class="channel-upload-name">Swiggy Instamart</span><span id="swiggyLastUpdate" class="last-updated">No data yet</span></div>
+        <div class="channel-upload-body">
+          <div class="upload-zone" id="swiggyZone" onclick="document.getElementById('swiggyFile').click()" ondragover="dragOver(event,'swiggyZone')" ondragleave="dragLeave('swiggyZone')" ondrop="dropFile(event,'swiggyFile','swiggyZone','swiggy')">
+            <input type="file" id="swiggyFile" accept=".xlsx,.xls,.csv" onchange="handleUpload(this,'swiggy','swiggyLastUpdate','swiggySuccess')">
+            <div class="upload-icon">⬆</div><div class="upload-zone-label">Upload Price Dump</div>
+            <div class="upload-zone-sub">.xlsx or .csv</div><div class="upload-success" id="swiggySuccess">✓ File loaded</div>
+          </div>
+        </div>
+      </div>
+      <div class="channel-upload-card">
+        <div class="channel-upload-top"><span class="channel-upload-name">Blinkit</span><span id="blinkitLastUpdate" class="last-updated">No data yet</span></div>
+        <div class="channel-upload-body">
+          <div class="upload-zone" id="blinkitZone" onclick="document.getElementById('blinkitFile').click()" ondragover="dragOver(event,'blinkitZone')" ondragleave="dragLeave('blinkitZone')" ondrop="dropFile(event,'blinkitFile','blinkitZone','blinkit')">
+            <input type="file" id="blinkitFile" accept=".xlsx,.xls,.csv" onchange="handleUpload(this,'blinkit','blinkitLastUpdate','blinkitSuccess')">
+            <div class="upload-icon">⬆</div><div class="upload-zone-label">Upload Price Dump</div>
+            <div class="upload-zone-sub">.xlsx or .csv</div><div class="upload-success" id="blinkitSuccess">✓ File loaded</div>
+          </div>
+        </div>
+      </div>
+      <div class="channel-upload-card">
+        <div class="channel-upload-top"><span class="channel-upload-name">Website</span><span id="websiteLastUpdate" class="last-updated">No data yet</span></div>
+        <div class="channel-upload-body">
+          <div class="upload-zone" id="websiteZone" onclick="document.getElementById('websiteFile').click()" ondragover="dragOver(event,'websiteZone')" ondragleave="dragLeave('websiteZone')" ondrop="dropFile(event,'websiteFile','websiteZone','website')">
+            <input type="file" id="websiteFile" accept=".xlsx,.xls,.csv" onchange="handleUpload(this,'website','websiteLastUpdate','websiteSuccess')">
+            <div class="upload-icon">⬆</div><div class="upload-zone-label">Upload Price Dump</div>
+            <div class="upload-zone-sub">.xlsx or .csv</div><div class="upload-success" id="websiteSuccess">✓ File loaded</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="toolbar-split">
+      <div class="search-wrap-sm">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input id="t4SearchProd" placeholder="Product / color" oninput="applyFilters()">
+      </div>
+      <select class="filter-select" id="t4AvailFilter" onchange="applyFilters()">
+        <option value="">All availability</option>
+        <option value="avail">Available only</option>
+        <option value="unavail">Unavailable only</option>
+      </select>
+    </div>
+    <div class="channel-bubbles" id="t4Bubbles"></div>
+    <div class="table-wrap">
+      <table id="t4Table">
+        <thead>
+          <tr>
+            <th class="sortable" onclick="sortTable('t4','product')">Product</th>
+            <th class="sortable" onclick="sortTable('t4','color')">Color</th>
+            <th>Category</th>
+            <th class="text-right th-amazon">Amazon</th><th class="text-right">Avail</th>
+            <th class="text-right th-swiggy">Swiggy</th>
+            <th class="text-right th-blinkit">Blinkit</th>
+            <th class="text-right th-website">Website</th>
+            <th class="text-right">MRP</th>
+          </tr>
+        </thead>
+        <tbody id="t4Body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB 5: MASTER SKU -->
+  <div id="tab5" class="tab-panel">
+    <div class="section-heading"><h2>Master SKU</h2><span class="sub">All products × colours with channel identifiers</span></div>
+    <div class="toolbar">
+      <div class="search-wrap">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input class="search-input" id="t5Search" placeholder="Search product, color, ASIN…" oninput="renderTab5()">
+      </div>
+    </div>
+    <div class="table-wrap master-sku-wrap">
+      <table id="t5Table">
+        <thead><tr>
+          <th class="sortable" onclick="sortTable('t5','product')">Product</th>
+          <th class="sortable" onclick="sortTable('t5','color')">Color</th>
+          <th>SKU</th>
+          <th class="th-amazon">Amazon ASIN</th>
+          <th class="th-swiggy">Swiggy Product ID</th>
+          <th class="th-blinkit">Blinkit Item ID</th>
+        </tr></thead>
+        <tbody id="t5Body"></tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<!-- EDIT DRAWER -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-header"><span class="drawer-title">Edit price entry</span><button class="drawer-close" onclick="closeDrawer()">✕</button></div>
+  <div class="drawer-body">
+    <div class="form-section">SKU details</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Product</label><input class="form-input" id="dProduct"></div>
+      <div class="form-group"><label class="form-label">Color</label><input class="form-input" id="dColor"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Channel</label>
+      <select class="form-select" id="dChannel"><option>Amazon</option><option>Swiggy</option><option>Blinkit</option><option>Website</option></select>
+    </div>
+    <div class="form-section">Price details</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Old Price (₹)</label><input class="form-input" id="dOldPrice" type="number"></div>
+      <div class="form-group"><label class="form-label">New Price (₹)</label><input class="form-input" id="dNewPrice" type="number"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Change Date</label><input class="form-input" id="dChangeDate" type="date"></div>
+      <div class="form-group"><label class="form-label">Revisit Date</label><input class="form-input" id="dRevisit" type="date"></div>
+    </div>
+    <div class="form-section">Approval</div>
+    <div class="form-group"><label class="form-label">Approved By</label><input class="form-input" id="dApprover"></div>
+    <div class="form-group"><label class="form-label">Reason / Notes</label><textarea class="form-textarea" id="dReason"></textarea></div>
+  </div>
+  <div class="drawer-footer">
+    <button class="btn" onclick="closeDrawer()">Cancel</button>
+    <button class="btn btn-primary" onclick="saveDrawer()">Save changes</button>
+  </div>
+</div>
+
+<!-- ADD MODAL -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal">
+    <div class="modal-header"><span class="drawer-title">Add price entry</span><button class="drawer-close" onclick="closeModal('addModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Product *</label>
+          <select class="form-select" id="mProduct" onchange="updateColorDropdown()">
+            <option value="">— select product —</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Color *</label>
+          <select class="form-select" id="mColor" onchange="autoFetchOldPrice()">
+            <option value="">— select product first —</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Channel — "All" creates 3 separate logs</label>
+        <select class="form-select" id="mChannel" onchange="autoFetchOldPrice()"><option>All</option><option>Amazon</option><option>Swiggy</option><option>Blinkit</option><option>Website</option></select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Old Price (₹) <span id="mOldPriceHint" style="font-size:10px;color:var(--ink-4);font-family:var(--mono);"></span></label>
+          <input class="form-input" id="mOldPrice" type="number" placeholder="auto-filled from log">
+        </div>
+        <div class="form-group"><label class="form-label">New Price (₹) *</label><input class="form-input" id="mNewPrice" type="number" placeholder="0"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Change Date *</label><input class="form-input" id="mChangeDate" type="date"></div>
+        <div class="form-group"><label class="form-label">Revisit Date</label><input class="form-input" id="mRevisit" type="date"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Approved By</label><input class="form-input" id="mApprover" placeholder="Name or email"></div>
+      <div class="form-group"><label class="form-label">Reason / Notes</label><textarea class="form-textarea" id="mReason" placeholder="Reason for price change…"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('addModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitAddRow()">Add entry</button>
+    </div>
+  </div>
+</div>
+
+<!-- EMAIL TEMPLATE MODAL -->
+<div class="modal-overlay" id="emailModal">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header"><span class="drawer-title">Email SOP Template</span><button class="drawer-close" onclick="closeModal('emailModal')">✕</button></div>
+    <div class="modal-body">
+      <div style="background:var(--paper-2);border:1px solid var(--line);border-radius:8px;padding:14px;font-family:var(--mono);font-size:12px;color:var(--ink-2);line-height:1.9;">
+        <strong style="color:var(--ink-3);font-size:10px;text-transform:uppercase;letter-spacing:.08em;">TO</strong><br>[founder / approver email]<br><br>
+        <strong style="color:var(--ink-3);font-size:10px;text-transform:uppercase;letter-spacing:.08em;">CC</strong><br><span id="emailTemplateCC" style="color:var(--purple);">set CC email above ↑</span><br><br>
+        <strong style="color:var(--ink-3);font-size:10px;text-transform:uppercase;letter-spacing:.08em;">SUBJECT</strong><br>PRICE CHANGE - [PRODUCT] - [COLOR or ALL] - [CHANNEL or ALL]<br><br>
+        <strong style="color:var(--ink-3);font-size:10px;text-transform:uppercase;letter-spacing:.08em;">BODY</strong><br>
+        Product: BFF<br>Color: Tokyo Totti Candy<br>Channel: Amazon<br>Old Price: ₹2,499<br>New Price: ₹2,999<br>Change Date: 20 May 2026<br>Reason: Initial pricing for new SKU launch<br>Revisit Date: 01 Jul 2026 (optional)
+      </div>
+      <div style="margin-top:12px;font-family:var(--mono);font-size:11px;color:var(--ink-4);line-height:1.8;">
+        · <strong>TO</strong> is the authorised approver — reply to this email constitutes approval<br>
+        · <strong>CC</strong> is the pricing inbox — must always be CC'd for the log to be captured<br>
+        · Color = ALL creates one log per colour variant of that product<br>
+        · Channel = ALL creates one log per channel (Amazon, Swiggy, Blinkit, Website)
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-primary" onclick="copyEmailTemplate()">Copy template</button></div>
+  </div>
+</div>
+
+<!-- DELETE CONFIRM MODAL -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header"><span class="drawer-title">Delete entry</span><button class="drawer-close" onclick="closeModal('deleteModal')">✕</button></div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--ink-2);line-height:1.6;" id="deleteConfirmText">Are you sure you want to delete this log entry? This cannot be undone.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('deleteModal')">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmDelete()">Delete entry</button>
+    </div>
+  </div>
+</div>
+
+<!-- CHART MODAL -->
+<div class="modal-overlay" id="chartModal">
+  <div class="modal chart-modal">
+    <div class="chart-modal-header">
+      <div><div class="chart-title" id="chartTitle">Price History</div><div class="chart-subtitle" id="chartSubtitle"></div></div>
+      <button class="drawer-close" onclick="closeModal('chartModal')">✕</button>
+    </div>
+    <div class="chart-modal-body">
+      <canvas id="chartCanvas" height="300"></canvas>
+      <div class="chart-legend" id="chartLegend"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+// ── CONFIG ──────────────────────────────────────
+const CONFIG={WEB_APP_URL:'YOUR_APPS_SCRIPT_WEBAPP_URL_HERE',SHEET_URL:'YOUR_GOOGLE_SHEET_JSON_URL_HERE'};
+const CHANNELS=['Amazon','Swiggy','Blinkit','Website'];
+
+// ── MASTER SKU DATA (from Master_File_26_V5) ────
+const MASTER_SKUS=[{"product":"BFF","colour":"Matcha Green","sku":"FN281729GMB","asin":"B0F4KR3N7J","swiggyId":"886835","blinkitId":"10238514"},{"product":"BFF","colour":"Black Pink Grey","sku":"FN281729BGB","asin":"B0F4KRVQN4","swiggyId":"994021","blinkitId":""},{"product":"BFF","colour":"Tokyo Totti Candy","sku":"FN281729TTB","asin":"B0F4KS1NWP","swiggyId":"502241","blinkitId":"10221604"},{"product":"BFF","colour":"Lemonade Yellow","sku":"FN281729LYB","asin":"B0F4KSL9TQ","swiggyId":"151296","blinkitId":""},{"product":"BFF","colour":"Icy Metal Grey","sku":"FN281729IMB","asin":"B0F4KVV2NQ","swiggyId":"238673","blinkitId":"10221594"},{"product":"DRIP","colour":"Elderberry Black","sku":"FT211421EBB","asin":"B0DFYTJSDZ","swiggyId":"882936","blinkitId":""},{"product":"DRIP","colour":"Açaí Teal","sku":"FT211421ATB","asin":"B0DFYVRR4N","swiggyId":"","blinkitId":""},{"product":"DRIP","colour":"Nuuk Red","sku":"FT211421RDB","asin":"B0DFYVRGNL","swiggyId":"210447","blinkitId":""},{"product":"DRIP","colour":"Yuzu Yellow","sku":"FT211421YYB","asin":"B0DFYW993N","swiggyId":"385362","blinkitId":""},{"product":"FOLDE v1","colour":"Nordic white","sku":"FN112111WHB","asin":"B0CV5J495D","swiggyId":"","blinkitId":"10161443"},{"product":"FOLDE v1","colour":"Serene Grey","sku":"FN112111GYB","asin":"B0CVRQ96F2","swiggyId":"","blinkitId":"10196052"},{"product":"FOLDE v2","colour":"Serene Grey","sku":"FN111124GYB","asin":"B0DXPY4BH9","swiggyId":"172206","blinkitId":"10238517"},{"product":"FOLDE v2","colour":"Midsommar Rose","sku":"FN111124MRB","asin":"B0DXPYSYRY","swiggyId":"","blinkitId":""},{"product":"FOLDE v2","colour":"Aurora Grey","sku":"FN111124AGB","asin":"B0DXPZLHTJ","swiggyId":"","blinkitId":""},{"product":"FOLDE v2","colour":"Aurora Blue (Mondo Edition)","sku":"FN111124AUB","asin":"B0DXQ12Y35","swiggyId":"","blinkitId":""},{"product":"FOLDE v2","colour":"Arctic Blue","sku":"FN111124ABB","asin":"B0DXQ1Z5T8","swiggyId":"","blinkitId":""},{"product":"FOLDE v2","colour":"Nordic white","sku":"FN111124WHB","asin":"B0DXQ27MY1","swiggyId":"","blinkitId":""},{"product":"HALO v2","colour":"Nordic white","sku":"FN141224WHR","asin":"B0FLDC4XN9","swiggyId":"","blinkitId":""},{"product":"HALO v2","colour":"Midnight Black","sku":"FN141223BKR_FBA","asin":"B0DBJ19FBB","swiggyId":"382343","blinkitId":"10296117"},{"product":"KRUSH","colour":"Nuuk Red","sku":"FT241421RDB","asin":"B0DH54GVPJ","swiggyId":"224957","blinkitId":""},{"product":"KRUSH","colour":"Yuzu Yellow","sku":"FT241421YYB","asin":"B0DH557TT4","swiggyId":"558528","blinkitId":""},{"product":"KRUSH","colour":"Elderberry Black","sku":"FT241421EBB","asin":"B0DH55T54K","swiggyId":"","blinkitId":"10196678"},{"product":"KRUSH","colour":"Açaí Teal","sku":"FT241421ATB","asin":"B0DH56RBQR","swiggyId":"","blinkitId":"10171927"},{"product":"KRUSH 2 JAR","colour":"Yuzu Yellow","sku":"FT241421YYB_2","asin":"B0FNX2GJ3X","swiggyId":"","blinkitId":""},{"product":"KRUSH 2 JAR","colour":"Nuuk Red","sku":"FT241422RDB_2","asin":"B0FNX2M7CJ","swiggyId":"","blinkitId":""},{"product":"KRUSH 2 JAR","colour":"Elderberry Black","sku":"FT241422EBB_2","asin":"B0FPD2WQNG","swiggyId":"","blinkitId":""},{"product":"KRUSH 2 JAR","colour":"Açaí Teal","sku":"FT241422ATB","asin":"B0FPCZWS76","swiggyId":"","blinkitId":""},{"product":"LIT v1","colour":"Nordic white","sku":"FN112212WHR","asin":"B0CV5MMKV1","swiggyId":"","blinkitId":"10161444"},{"product":"LIT v1","colour":"Serene Grey","sku":"FN112212GYR","asin":"B0CVRJC4WW","swiggyId":"","blinkitId":"10196095"},{"product":"LIT v2","colour":"Matcha Green","sku":"FN121123MGR","asin":"B0DWMZSNDX","swiggyId":"","blinkitId":"10238516"},{"product":"LIT v2","colour":"Midsommar Rose","sku":"FN121123MPR","asin":"B0DWMZP6CG","swiggyId":"","blinkitId":""},{"product":"LIT v2","colour":"Nordic White","sku":"FN121123WHR","asin":"B0DWMXYZVC","swiggyId":"","blinkitId":""},{"product":"LIT v2","colour":"Serene Grey","sku":"FN121123GYR","asin":"B0DWN11193","swiggyId":"638763","blinkitId":"10238519"},{"product":"REN BEAM","colour":"Meteor Grey","sku":"VC181221MGB","asin":"B0DH82R1T7","swiggyId":"865009","blinkitId":""},{"product":"REN Go","colour":"Midnight Black","sku":"VC161151BKB","asin":"B0D1K91D1Z","swiggyId":"990260","blinkitId":"10161434"},{"product":"REN Go","colour":"Tundra Green","sku":"VC161151TGB","asin":"B0DH4L39SC","swiggyId":"","blinkitId":""},{"product":"Ren Pro","colour":"Meteor Grey","sku":"VC271527MGB","asin":"B0FGXRQFWD","swiggyId":"","blinkitId":""},{"product":"RĪZZ","colour":"Vogue Blue","sku":"GC251121VBB","asin":"B0DQL6WN4P","swiggyId":"","blinkitId":""},{"product":"RĪZZ","colour":"Couture Grey","sku":"GC251121CGB","asin":"B0DQL65R7J","swiggyId":"391044","blinkitId":"10268642"},{"product":"RĪZZ","colour":"Nuuk Red","sku":"GC251121RDB","asin":"B0DQL6YPZ4","swiggyId":"569198","blinkitId":"10269159"},{"product":"RĪZZ","colour":"Haute Matcha","sku":"GC251121HMB","asin":"B0DQL5YNWQ","swiggyId":"","blinkitId":""},{"product":"RĪZZ","colour":"Chic Rose","sku":"GC251121CRB","asin":"B0DQL52MRL","swiggyId":"","blinkitId":""},{"product":"STROM","colour":"Serene Grey","sku":"GS151121GYB","asin":"B0D4JYJYP6","swiggyId":"","blinkitId":"10238520"},{"product":"STROM","colour":"Nuuk Red","sku":"GS151121RDB","asin":"B0D4JXQGD7","swiggyId":"727998","blinkitId":""},{"product":"STROM","colour":"Nordic white","sku":"GS151121WHB","asin":"B0D47HBRXR","swiggyId":"","blinkitId":""},{"product":"Hot Blox","colour":"Midnight Black","sku":"HT361136MBS","asin":"B0FW5B57X5","swiggyId":"","blinkitId":"10266278"},{"product":"Hot Blox","colour":"Serene Grey","sku":"HT361136GYS","asin":"B0FW57H2V3","swiggyId":"","blinkitId":"10272029"},{"product":"Hot Bar","colour":"Blue","sku":"HT412739BLB","asin":"B0FXN6G8R4","swiggyId":"","blinkitId":""},{"product":"Hot Bar","colour":"Nuuk Red","sku":"HT412739RDB","asin":"B0FXN6XW6T","swiggyId":"323523","blinkitId":"10272031"},{"product":"Hot Bar","colour":"Grey","sku":"HT412739GYB","asin":"B0FXN7FQR5","swiggyId":"323523","blinkitId":"10272000"},{"product":"Brisk","colour":"Serene Grey","sku":"FT391237GYB","asin":"B0FXLKZ9ZH","swiggyId":"805739","blinkitId":"10272068"},{"product":"Brisk","colour":"Nuuk Red","sku":"FT391237RDB","asin":"B0FXLLB21N","swiggyId":"885860","blinkitId":"10289174"},{"product":"Brisk","colour":"Sesame Grey","sku":"FT391237SGB","asin":"B0FXLKG1XR","swiggyId":"","blinkitId":"10272030"},{"product":"Strom GO V2","colour":"Serene Grey","sku":"GS151122GYB","asin":"B0FV34C51P","swiggyId":"183180","blinkitId":""},{"product":"Strom GO V2","colour":"Nuuk Red","sku":"GS151122RDB","asin":"B0FV2WG2T2","swiggyId":"826724","blinkitId":"10166089"},{"product":"Strom GO V2","colour":"Santorini Blue","sku":"GS151122SBB","asin":"B0FVG2JPKR","swiggyId":"","blinkitId":""},{"product":"Strom GO V2","colour":"Capetown coral","sku":"GS151122CCB","asin":"B0FVG4DTPP","swiggyId":"","blinkitId":""},{"product":"Strom GO V2","colour":"Kyoto Matcha Green","sku":"GS151122MGB","asin":"B0FVG2V2JG","swiggyId":"","blinkitId":""},{"product":"Lit v3","colour":"Midsommar Rose","sku":"FN121126MPR","asin":"B0GNMLQ2KF","swiggyId":"","blinkitId":""},{"product":"Lit v3","colour":"Matcha Green","sku":"FN121126MGR","asin":"B0GNMLJ2KN","swiggyId":"","blinkitId":""},{"product":"Lit v3","colour":"Nordic White","sku":"FN121126WHR","asin":"B0GNMLGJVZ","swiggyId":"","blinkitId":""},{"product":"Lit v3","colour":"Serene Grey","sku":"FN121126GYR","asin":"B0GNMPM4VK","swiggyId":"","blinkitId":""},{"product":"Klip","colour":"Sakura Pink","sku":"FN281125SPB","asin":"B0GNMX3346","swiggyId":"","blinkitId":""},{"product":"Klip","colour":"Buttercup Yellow","sku":"FN281125BYB","asin":"B0GNN2NFHJ","swiggyId":"","blinkitId":""},{"product":"Klip","colour":"Matcha Green","sku":"FN281125MGB","asin":"B0GNMPKDTK","swiggyId":"452217","blinkitId":""},{"product":"Klip","colour":"Serene Grey","sku":"FN281125GYB","asin":"B0GNN1K4Q7","swiggyId":"","blinkitId":"10296121"},{"product":"Ren Pro + Wet Mop","colour":"Meteor Grey","sku":"VC271522MGB","asin":"B0GFMW5YXL","swiggyId":"","blinkitId":""},{"product":"Lit Pro","colour":"Dusk Blue","sku":"FN121427DBR","asin":"B0GP6KH5W9","swiggyId":"","blinkitId":""},{"product":"Lit Pro","colour":"Nordic white","sku":"FN121427WHR","asin":"B0GP679RWJ","swiggyId":"","blinkitId":""},{"product":"Lit Pro","colour":"Serene Grey","sku":"FN121427GYR","asin":"B0GP6SRNQV","swiggyId":"","blinkitId":""},{"product":"Halo linked","colour":"Nordic white","sku":"FN141224WHS","asin":"B0GP6W79KC","swiggyId":"","blinkitId":""},{"product":"Halo linked","colour":"Serene Grey","sku":"FN141224BKS","asin":"B0GP67F314","swiggyId":"","blinkitId":""}];
+
+// ── SEED LOG (channel-specific, no "All") ───────
+const SEED_LOG_RAW=[
+  {product:'BFF',color:'Tokyo Totti Candy',channel:'Amazon',oldPrice:null,newPrice:2999,changeDate:'2026-05-20',approvedBy:'Gazal',reason:'Initial pricing.',revisit:null,source:'MANUAL',ts:'2026-05-20T09:00:00'},
+  {product:'BFF',color:'Tokyo Totti Candy',channel:'Swiggy',oldPrice:null,newPrice:2999,changeDate:'2026-05-20',approvedBy:'Gazal',reason:'Initial pricing.',revisit:null,source:'MANUAL',ts:'2026-05-20T09:00:01'},
+  {product:'BFF',color:'Tokyo Totti Candy',channel:'Blinkit',oldPrice:null,newPrice:2999,changeDate:'2026-05-20',approvedBy:'Gazal',reason:'Initial pricing.',revisit:null,source:'MANUAL',ts:'2026-05-20T09:00:02'},
+  {product:'BFF',color:'Tokyo Totti Candy',channel:'Website',oldPrice:null,newPrice:2999,changeDate:'2026-05-20',approvedBy:'Gazal',reason:'Initial pricing.',revisit:null,source:'MANUAL',ts:'2026-05-20T09:00:03'},
+  {product:'BFF',color:'Icy Metal Grey',channel:'Amazon',oldPrice:null,newPrice:2999,changeDate:'2026-05-20',approvedBy:'Gazal',reason:'Initial pricing.',revisit:null,source:'MANUAL',ts:'2026-05-20T09:01:00'},
+  {product:'BFF',color:'Icy Metal Grey',channel:'Swiggy',oldPrice:null,newPrice:2999,changeDate:'2026-05-20',approvedBy:'Gazal',reason:'Initial pricing.',revisit:null,source:'MANUAL',ts:'2026-05-20T09:01:01'},
+  {product:'BFF',color:'Icy Metal Grey',channel:'Blinkit',oldPrice:null,newPrice:2999,changeDate:'2026-05-20',approvedBy:'Gazal',reason:'Initial pricing.',revisit:null,source:'MANUAL',ts:'2026-05-20T09:01:02'},
+  {product:'BFF',color:'Icy Metal Grey',channel:'Website',oldPrice:null,newPrice:2999,changeDate:'2026-05-20',approvedBy:'Gazal',reason:'Initial pricing.',revisit:null,source:'MANUAL',ts:'2026-05-20T09:01:03'},
+  {product:'Lit Pro',color:'Dusk Blue',channel:'Amazon',oldPrice:4299,newPrice:4399,changeDate:'2026-05-20',approvedBy:'Aditya',reason:'Change due to high DRR and OOS risk. Goal is to increase the DRR of the white.',revisit:null,source:'MANUAL',ts:'2026-05-20T09:04:00'},
+  {product:'Lit Pro',color:'Dusk Blue',channel:'Swiggy',oldPrice:4299,newPrice:4399,changeDate:'2026-05-20',approvedBy:'Aditya',reason:'Change due to high DRR and OOS risk.',revisit:null,source:'MANUAL',ts:'2026-05-20T09:04:01'},
+  {product:'Lit Pro',color:'Dusk Blue',channel:'Blinkit',oldPrice:4299,newPrice:4399,changeDate:'2026-05-20',approvedBy:'Aditya',reason:'Change due to high DRR and OOS risk.',revisit:null,source:'MANUAL',ts:'2026-05-20T09:04:02'},
+  {product:'Lit Pro',color:'Dusk Blue',channel:'Website',oldPrice:4299,newPrice:4399,changeDate:'2026-05-20',approvedBy:'Aditya',reason:'Change due to high DRR and OOS risk.',revisit:null,source:'MANUAL',ts:'2026-05-20T09:04:03'},
+  {product:'STROM',color:'Serene Grey',channel:'Amazon',oldPrice:2899,newPrice:2999,changeDate:'2026-05-20',approvedBy:'Aditya',reason:'Avoid OOS risk and push sales for other colors.',revisit:'2026-07-01',source:'CHAT',ts:'2026-05-20T09:05:00'},
+  {product:'STROM',color:'Serene Grey',channel:'Swiggy',oldPrice:2899,newPrice:2999,changeDate:'2026-05-20',approvedBy:'Aditya',reason:'Avoid OOS risk and push sales for other colors.',revisit:'2026-07-01',source:'CHAT',ts:'2026-05-20T09:05:01'},
+  {product:'STROM',color:'Serene Grey',channel:'Blinkit',oldPrice:2899,newPrice:2999,changeDate:'2026-05-20',approvedBy:'Aditya',reason:'Avoid OOS risk and push sales for other colors.',revisit:'2026-07-01',source:'CHAT',ts:'2026-05-20T09:05:02'},
+  {product:'STROM',color:'Serene Grey',channel:'Website',oldPrice:2899,newPrice:2999,changeDate:'2026-05-20',approvedBy:'Aditya',reason:'Avoid OOS risk and push sales for other colors.',revisit:'2026-07-01',source:'CHAT',ts:'2026-05-20T09:05:03'},
+  {product:'STROM',color:'Nuuk Red',channel:'Amazon',oldPrice:2899,newPrice:3099,changeDate:'2026-05-20',approvedBy:'Aditya',reason:'Avoid OOS risk and push sales for other colors.',revisit:null,source:'CHAT',ts:'2026-05-20T09:06:00'},
+  {product:'STROM',color:'Nuuk Red',channel:'Swiggy',oldPrice:2899,newPrice:3099,changeDate:'2026-05-20',approvedBy:'Aditya',reason:'Avoid OOS risk and push sales for other colors.',revisit:null,source:'CHAT',ts:'2026-05-20T09:06:01'},
+  {product:'STROM',color:'Nuuk Red',channel:'Blinkit',oldPrice:2899,newPrice:3099,changeDate:'2026-05-20',approvedBy:'Aditya',reason:'Avoid OOS risk and push sales for other colors.',revisit:null,source:'CHAT',ts:'2026-05-20T09:06:02'},
+  {product:'STROM',color:'Nuuk Red',channel:'Website',oldPrice:2899,newPrice:3099,changeDate:'2026-05-20',approvedBy:'Aditya',reason:'Avoid OOS risk and push sales for other colors.',revisit:null,source:'CHAT',ts:'2026-05-20T09:06:03'},
+  {product:'DRIP',color:'Nuuk Red',channel:'Amazon',oldPrice:12499,newPrice:11499,changeDate:'2026-05-07',approvedBy:'',reason:'May ART: price reduced to slow Red DRR due to low stock.',revisit:null,source:'MANUAL',ts:'2026-05-07T09:00:00'},
+  {product:'DRIP',color:'Açaí Teal',channel:'Amazon',oldPrice:11499,newPrice:10999,changeDate:'2026-05-07',approvedBy:'',reason:'May ART: price reduced to increase DRR vs Red.',revisit:null,source:'MANUAL',ts:'2026-05-07T09:01:00'},
+  {product:'DRIP',color:'Elderberry Black',channel:'Amazon',oldPrice:11499,newPrice:10999,changeDate:'2026-05-07',approvedBy:'',reason:'May ART: price reduced to increase DRR vs Red.',revisit:null,source:'MANUAL',ts:'2026-05-07T09:02:00'},
+];
+
+let priceLog=SEED_LOG_RAW.map((r,i)=>({...r,id:i+1}));
+let nextLogId=priceLog.length+1;
+
+// Amazon buybox data
+const AMAZON_DATA=[{"product":"Brisk","color":"Sesame Grey","asin":"B0FXLKG1XR","mrp":12499,"price":8999,"availability":"Avail","channel":"Amazon","category":"air fryers"},{"product":"Hot Bar","color":"Blue","asin":"B0FXN6G8R4","mrp":8999,"price":6499,"availability":"Avail","channel":"Amazon","category":"room heaters"},{"product":"Brisk","color":"Nuuk Red","asin":"B0FXLLB21N","mrp":12499,"price":8999,"availability":"Avail","channel":"Amazon","category":"air fryers"},{"product":"HALO v2","color":"Nordic white","asin":"B0FLDC4XN9","mrp":15999,"price":10999,"availability":"Avail","channel":"Amazon","category":"tower fans"},{"product":"Brisk","color":"Serene Grey","asin":"B0FXLKZ9ZH","mrp":12499,"price":8999,"availability":"Avail","channel":"Amazon","category":"air fryers"},{"product":"LIT v2","color":"Serene Grey","asin":"B0DWN11193","mrp":3899,"price":2899,"availability":"Avail","channel":"Amazon","category":"table fans"},{"product":"FOLDE v2","color":"Aurora Blue (Mondo Edition)","asin":"B0DXQ12Y35","mrp":3499,"price":2799,"availability":"Avail","channel":"Amazon","category":"personal fans"},{"product":"KRUSH","color":"Açaí Teal","asin":"B0DH56RBQR","mrp":5299,"price":3399,"availability":"Avail","channel":"Amazon","category":"mixer grinder blender"},{"product":"RĪZZ","color":"Chic Rose","asin":"B0DQL52MRL","mrp":2099,"price":999,"availability":"Avail","channel":"Amazon","category":"lint remover"},{"product":"BFF","color":"Matcha Green","asin":"B0F4KR3N7J","mrp":null,"price":null,"availability":"Unavail","channel":"Amazon","category":"mini fans"},{"product":"BFF","color":"Black Pink Grey","asin":"B0F4KRVQN4","mrp":null,"price":null,"availability":"Unavail","channel":"Amazon","category":"mini fans"},{"product":"BFF","color":"Lemonade Yellow","asin":"B0F4KSL9TQ","mrp":null,"price":null,"availability":"Unavail","channel":"Amazon","category":"mini fans"},{"product":"BFF","color":"Tokyo Totti Candy","asin":"B0F4KS1NWP","mrp":2700,"price":2299,"availability":"Avail","channel":"Amazon","category":"mini fans"},{"product":"Ren Pro","color":"Meteor Grey","asin":"B0FGXRQFWD","mrp":25999,"price":19999,"availability":"Avail","channel":"Amazon","category":"vacuum cleaner"},{"product":"BFF","color":"Icy Metal Grey","asin":"B0F4KVV2NQ","mrp":2700,"price":2299,"availability":"Avail","channel":"Amazon","category":"mini fans"},{"product":"KRUSH 2 JAR","color":"Nuuk Red","asin":"B0FNX2M7CJ","mrp":5299,"price":3999,"availability":"Avail","channel":"Amazon","category":"juicer mixer grinders"},{"product":"FOLDE v2","color":"Midsommar Rose","asin":"B0DXPYSYRY","mrp":3499,"price":2799,"availability":"Avail","channel":"Amazon","category":"personal fans"},{"product":"FOLDE v2","color":"Serene Grey","asin":"B0DXPY4BH9","mrp":3499,"price":2799,"availability":"Avail","channel":"Amazon","category":"personal fans"},{"product":"RĪZZ","color":"Nuuk Red","asin":"B0DQL6YPZ4","mrp":2099,"price":999,"availability":"Avail","channel":"Amazon","category":"lint remover"},{"product":"RĪZZ","color":"Vogue Blue","asin":"B0DQL6WN4P","mrp":2099,"price":999,"availability":"Avail","channel":"Amazon","category":"lint remover"},{"product":"RĪZZ","color":"Haute Matcha","asin":"B0DQL5YNWQ","mrp":2099,"price":999,"availability":"Avail","channel":"Amazon","category":"lint remover"},{"product":"LIT v2","color":"Nordic White","asin":"B0DWMXYZVC","mrp":3899,"price":2899,"availability":"Avail","channel":"Amazon","category":"table fans"},{"product":"LIT v2","color":"Matcha Green","asin":"B0DWMZSNDX","mrp":3899,"price":2899,"availability":"Avail","channel":"Amazon","category":"table fans"},{"product":"KRUSH 2 JAR","color":"Yuzu Yellow","asin":"B0FNX2GJ3X","mrp":5299,"price":3999,"availability":"Avail","channel":"Amazon","category":"juicer mixer grinders"},{"product":"Hot Blox","color":"Serene Grey","asin":"B0FW57H2V3","mrp":null,"price":null,"availability":"Unavail","channel":"Amazon","category":"room heaters"},{"product":"REN BEAM","color":"Meteor Grey","asin":"B0DH82R1T7","mrp":10999,"price":7999,"availability":"Avail","channel":"Amazon","category":"vacuum cleaner"},{"product":"LIT v2","color":"Midsommar Rose","asin":"B0DWMZP6CG","mrp":3889,"price":2899,"availability":"Avail","channel":"Amazon","category":"table fans"},{"product":"RĪZZ","color":"Couture Grey","asin":"B0DQL65R7J","mrp":null,"price":null,"availability":"Unavail","channel":"Amazon","category":"lint remover"},{"product":"FOLDE v2","color":"Aurora Grey","asin":"B0DXPZLHTJ","mrp":3499,"price":2799,"availability":"Avail","channel":"Amazon","category":"personal fans"},{"product":"FOLDE v2","color":"Arctic Blue","asin":"B0DXQ1Z5T8","mrp":3499,"price":2507,"availability":"Avail","channel":"Amazon","category":"personal fans"},{"product":"FOLDE v2","color":"Nordic white","asin":"B0DXQ27MY1","mrp":3499,"price":2799,"availability":"Avail","channel":"Amazon","category":"personal fans"},{"product":"STROM","color":"Serene Grey","asin":"B0D4JYJYP6","mrp":null,"price":null,"availability":"Unavail","channel":"Amazon","category":"garment steamer"},{"product":"STROM","color":"Nuuk Red","asin":"B0D4JXQGD7","mrp":4499,"price":2599,"availability":"Avail","channel":"Amazon","category":"garment steamer"},{"product":"LIT v1","color":"Serene Grey","asin":"B0CVRJC4WW","mrp":null,"price":null,"availability":"Unavail","channel":"Amazon","category":"table fans"},{"product":"STROM","color":"Nordic white","asin":"B0D47HBRXR","mrp":null,"price":null,"availability":"Unavail","channel":"Amazon","category":"garment steamer"},{"product":"DRIP","color":"Elderberry Black","asin":"B0DFYTJSDZ","mrp":28147,"price":12499,"availability":"Avail","channel":"Amazon","category":"juicers"},{"product":"REN Go","color":"Midnight Black","asin":"B0D1K91D1Z","mrp":5699,"price":3496,"availability":"Avail","channel":"Amazon","category":"handheld vacuums"},{"product":"FOLDE v1","color":"Nordic white","asin":"B0CV5J495D","mrp":null,"price":null,"availability":"Unavail","channel":"Amazon","category":"personal fans"},{"product":"FOLDE v1","color":"Serene Grey","asin":"B0CVRQ96F2","mrp":null,"price":3249,"availability":"Avail","channel":"Amazon","category":"personal fans"},{"product":"REN Go","color":"Tundra Green","asin":"B0DH4L39SC","mrp":5699,"price":3496,"availability":"Avail","channel":"Amazon","category":"handheld vacuums"},{"product":"DRIP","color":"Nuuk Red","asin":"B0DFYVRGNL","mrp":28149,"price":12499,"availability":"Avail","channel":"Amazon","category":"juicers"},{"product":"DRIP","color":"Açaí Teal","asin":"B0DFYVRR4N","mrp":28149,"price":12499,"availability":"Avail","channel":"Amazon","category":"juicers"},{"product":"DRIP","color":"Yuzu Yellow","asin":"B0DFYW993N","mrp":28149,"price":12499,"availability":"Avail","channel":"Amazon","category":"juicers"},{"product":"LIT v1","color":"Nordic white","asin":"B0CV5MMKV1","mrp":null,"price":null,"availability":"Unavail","channel":"Amazon","category":"table fans"},{"product":"KRUSH","color":"Nuuk Red","asin":"B0DH54GVPJ","mrp":null,"price":null,"availability":"Unavail","channel":"Amazon","category":"mixer grinder blender"},{"product":"KRUSH","color":"Yuzu Yellow","asin":"B0DH557TT4","mrp":5299,"price":3299,"availability":"Avail","channel":"Amazon","category":"mixer grinder blender"},{"product":"Hot Bar","color":"Grey","asin":"B0FXN7FQR5","mrp":8999,"price":6499,"availability":"Avail","channel":"Amazon","category":"room heaters"},{"product":"KRUSH","color":"Elderberry Black","asin":"B0DH55T54K","mrp":null,"price":null,"availability":"Unavail","channel":"Amazon","category":"mixer grinder blender"}];
+let channelData={amazon:[...AMAZON_DATA],swiggy:[],blinkit:[],website:[]};
+
+// ── STATE ────────────────────────────────────────
+let activeProduct='';
+let activeTab='tab1';
+let editingId=null;
+let deleteTargetId=null;
+let ccEmail='';let ccLocked=false;
+let sortState={t1:{col:'',dir:1},t2:{col:'',dir:1},t3:{col:'',dir:1},t4:{col:'',dir:1},t5:{col:'',dir:1}};
+
+// ── HELPERS ──────────────────────────────────────
+const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const fmt=n=>n!=null?'₹'+Number(n).toLocaleString('en-IN'):'—';
+const fmtDate=s=>{if(!s)return'—';const d=new Date(s);return isNaN(d)?s:d.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});};
+function showToast(msg,dur=2400){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),dur);}
+function svgChevron(){return`<svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M4 2l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;}
+
+// ── TABS ─────────────────────────────────────────
+function switchTab(id,btn){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+  activeTab=id;
+  // Show/hide stat cards and slicer based on tab
+  document.getElementById('t1StatsWrap').style.display=(id==='tab1')?'':'none';
+  document.getElementById('slicerBar').style.display=(id==='tab5')?'none':'';
+  applyFilters();
+}
+
+// ── PRODUCT CHIPS ────────────────────────────────
+function buildProductChips(){
+  const products=[...new Set(priceLog.map(e=>e.product))].sort();
+  const all=['',  ...products];
+  document.getElementById('productChips').innerHTML=all.map(p=>`<span class="chip${p===activeProduct?' active':''}" onclick="setProductFilter('${esc(p)}',this)">${p||'All'}</span>`).join('');
+}
+function setProductFilter(val,el){
+  activeProduct=val;
+  document.querySelectorAll('#productChips .chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  applyFilters();
+}
+
+// ── MASTER SKU dropdown helpers ──────────────────
+function getMasterProducts(){return[...new Set(MASTER_SKUS.map(s=>s.product))].sort();}
+function getColoursForProduct(product){return MASTER_SKUS.filter(s=>s.product===product).map(s=>s.colour);}
+function populateProductDropdown(){
+  const sel=document.getElementById('mProduct');
+  const prods=getMasterProducts();
+  sel.innerHTML='<option value="">— select product —</option>'+prods.map(p=>`<option>${esc(p)}</option>`).join('');
+}
+function updateColorDropdown(){
+  const product=document.getElementById('mProduct').value;
+  const sel=document.getElementById('mColor');
+  if(!product){sel.innerHTML='<option value="">— select product first —</option>';return;}
+  const colours=getColoursForProduct(product);
+  // "All colours" option creates one log per colour×channel
+  sel.innerHTML='<option value="">— select colour —</option>'
+    +'<option value="__ALL__">All colours (creates entry per colour)</option>'
+    +colours.map(c=>`<option>${esc(c)}</option>`).join('');
+  autoFetchOldPrice();
+}
+
+// Auto-fetch old price from the latest log entry for selected product+color+channel
+function autoFetchOldPrice(){
+  const product=document.getElementById('mProduct').value;
+  const colorSel=document.getElementById('mColor').value;
+  const channel=document.getElementById('mChannel').value;
+  const hint=document.getElementById('mOldPriceHint');
+  if(!product||!colorSel||colorSel==='__ALL__'){
+    document.getElementById('mOldPrice').value='';
+    if(hint)hint.textContent='';
+    return;
+  }
+  // Look for most recent log entry for this SKU+channel combination
+  const channels=channel==='All'?CHANNELS:[channel];
+  let latestPrice=null,latestDate='';
+  for(const ch of channels){
+    const e=getLatestPerChannel(product,colorSel,ch);
+    if(e&&(!latestDate||e.changeDate>latestDate)){latestPrice=e.newPrice;latestDate=e.changeDate;}
+  }
+  if(latestPrice!=null){
+    document.getElementById('mOldPrice').value=latestPrice;
+    if(hint)hint.textContent=`· from log ${fmtDate(latestDate)}`;
+  }else{
+    document.getElementById('mOldPrice').value='';
+    if(hint)hint.textContent='· no prior entry';
+  }
+}
+
+// ── DATA HELPERS ─────────────────────────────────
+function getLatestPerSku(){
+  // For Tab 1: show one row per product+color, with latest price per channel
+  const skuMap={};
+  for(const e of priceLog){
+    const key=`${e.product}|${e.color}`;
+    if(!skuMap[key])skuMap[key]={product:e.product,color:e.color,lastChanged:e.changeDate,lastApprover:e.approvedBy,revisit:e.revisit,entries:[]};
+    skuMap[key].entries.push(e);
+    if(new Date(e.changeDate)>=new Date(skuMap[key].lastChanged)){
+      skuMap[key].lastChanged=e.changeDate;
+      skuMap[key].lastApprover=e.approvedBy;
+    }
+    if(e.revisit)skuMap[key].revisit=e.revisit;
+  }
+  return Object.values(skuMap);
+}
+
+function getLatestPerChannel(product,color,channel){
+  return priceLog.filter(e=>e.product===product&&e.color===color&&e.channel===channel).sort((a,b)=>new Date(b.ts)-new Date(a.ts))[0]||null;
+}
+
+function hasUpcomingRevisit(sku){
+  if(!sku.revisit)return false;
+  const r=new Date(sku.revisit);
+  return r>new Date(Date.now()-86400000*7);// within past week or future
+}
+
+function priceBlockHtml(entry){
+  if(!entry)return`<div class="price-block"><span class="price-main na">—</span></div>`;
+  const cur=entry.newPrice,prev=entry.oldPrice;
+  const up=prev&&cur>prev,down=prev&&cur<prev;
+  const cls=up?'up':down?'down':'';
+  const arrow=up?'▲':down?'▼':'';
+  const prevHtml=prev&&prev!==cur?`<span class="price-prev ${cls}"><span style="font-size:9px;">${arrow}</span>${fmt(prev)}</span>`:'';
+  return`<div class="price-block"><span class="price-main">${fmt(cur)}</span>${prevHtml}</div>`;
+}
+
+// ── SORT ─────────────────────────────────────────
+function sortTable(tab,col){
+  const s=sortState[tab];
+  if(s.col===col)s.dir*=-1;else{s.col=col;s.dir=1;}
+  // Update header classes
+  document.querySelectorAll(`#${tab}Table th`).forEach(th=>{th.classList.remove('sort-asc','sort-desc');});
+  const clicked=document.querySelector(`#${tab}Table th[onclick*="${col}"]`);
+  if(clicked)clicked.classList.add(s.dir===1?'sort-asc':'sort-desc');
+  applyFilters();
+}
+
+function sortSkus(arr,tab){
+  const s=sortState[tab];if(!s.col)return arr;
+  return[...arr].sort((a,b)=>{
+    let va='',vb='';
+    if(s.col==='product'){va=a.product||'';vb=b.product||'';}
+    else if(s.col==='color'){va=a.color||'';vb=b.color||'';}
+    else if(s.col==='date'){va=a.lastChanged||a.changeDate||'';vb=b.lastChanged||b.changeDate||'';}
+    return va.localeCompare(vb)*s.dir;
+  });
+}
+
+// ── APPLY FILTERS ────────────────────────────────
+function getVal(id){return(document.getElementById(id)?.value||'').toLowerCase().trim();}
+function applyFilters(){
+  buildProductChips();
+  if(activeTab==='tab1')renderTab1();
+  else if(activeTab==='tab2')renderTab2();
+  else if(activeTab==='tab3')renderTab3();
+  else if(activeTab==='tab4')renderTab4();
+  else if(activeTab==='tab5')renderTab5();
+}
+
+// Channel upload date tracking
+const channelUploadDates={amazon:'04 Jun 2026',swiggy:null,blinkit:null,website:null};
+// ── UPDATE DATE SUB-ROWS IN TAB 3 & TAB 4 ────────
+// ── UPDATE CHANNEL DATE BUBBLES ───────────────────
+function updateDateRows(){
+  const channels=[
+    {key:'amazon', label:'Amazon',  cls:'ch-bubble-amazon'},
+    {key:'swiggy', label:'Swiggy',  cls:'ch-bubble-swiggy'},
+    {key:'blinkit',label:'Blinkit', cls:'ch-bubble-blinkit'},
+    {key:'website',label:'Website', cls:'ch-bubble-website'},
+  ];
+  function buildBubbles(){
+    return channels.map(({key,label,cls})=>{
+      const d=channelUploadDates[key];
+      const noData=!d;
+      return`<div class="ch-bubble ${cls}${noData?' ch-bubble-nodata':''}">
+        <span class="ch-bubble-dot"></span>
+        <span class="ch-bubble-name">${label}</span>
+        <span class="ch-bubble-date">${d?'· '+d:'· no data'}</span>
+      </div>`;
+    }).join('');
+  }
+  const html=buildBubbles();
+  const t3=document.getElementById('t3Bubbles');
+  const t4=document.getElementById('t4Bubbles');
+  if(t3)t3.innerHTML=html;
+  if(t4)t4.innerHTML=html;
+}
+
+function chClass(ch){
+  if(ch==='Amazon')return'ch-amazon';
+  if(ch==='Swiggy')return'ch-swiggy';
+  if(ch==='Blinkit')return'ch-blinkit';
+  if(ch==='Website')return'ch-website';
+  return'ch-all';
+}
+
+// ── TAB 1 ────────────────────────────────────────
+function priceOrNA(entry, channel){
+  if(entry) return priceBlockHtml(entry);
+  return`<div class="price-block"><span class="na-cell">N/A</span></div>`;
+}
+
+function renderTab1(){
+  const allSkus=getLatestPerSku();           // full unfiltered — for stat cards
+  let skus=allSkus;
+  const qProd=getVal('t1SearchProd');
+  const qDate=getVal('t1SearchDate');
+  const qApprover=getVal('t1SearchApprover');
+  if(activeProduct)skus=skus.filter(s=>s.product===activeProduct);
+  if(qProd)skus=skus.filter(s=>`${s.product} ${s.color}`.toLowerCase().includes(qProd));
+  if(qDate)skus=skus.filter(s=>fmtDate(s.lastChanged).toLowerCase().includes(qDate));
+  if(qApprover)skus=skus.filter(s=>(s.lastApprover||'').toLowerCase().includes(qApprover));
+  skus=sortSkus(skus,'t1');
+
+  // Stat cards always reflect the FULL log, never the search-filtered view
+  const inc=priceLog.filter(e=>e.newPrice>(e.oldPrice||0)&&e.oldPrice).length;
+  const red=priceLog.filter(e=>e.newPrice<(e.oldPrice||0)&&e.oldPrice).length;
+  document.getElementById('cnt1').textContent=allSkus.length;
+  document.getElementById('t1StatsWrap').innerHTML=`
+    <div class="stat-card"><div class="stat-label">Active SKUs</div><div class="stat-value">${allSkus.length}</div><div class="stat-sub">product × colour pairs</div></div>
+    <div class="stat-card"><div class="stat-label">Price Increases</div><div class="stat-value red">${inc}</div><div class="stat-sub">vs previous price</div></div>
+    <div class="stat-card"><div class="stat-label">Price Reductions</div><div class="stat-value green">${red}</div><div class="stat-sub">vs previous price</div></div>
+  `;
+
+  let html='';
+  skus.forEach((sku,idx)=>{
+    const amzE=getLatestPerChannel(sku.product,sku.color,'Amazon');
+    const swE=getLatestPerChannel(sku.product,sku.color,'Swiggy');
+    const blE=getLatestPerChannel(sku.product,sku.color,'Blinkit');
+    const webE=getLatestPerChannel(sku.product,sku.color,'Website');
+    const detailId=`t1d-${idx}`;
+    const hasRevisit=hasUpcomingRevisit(sku);
+    const revisitBadge=hasRevisit?`<span class="revisit-alert">↻ revisit ${fmtDate(sku.revisit)}</span>`:'';
+    const channelEntries=CHANNELS.map(ch=>({ch,entry:getLatestPerChannel(sku.product,sku.color,ch)})).filter(x=>x.entry);
+    const hasDetail=channelEntries.length>0;
+
+    // Check master SKU for channel presence — if no ID, show N/A
+    const masterEntry=MASTER_SKUS.find(m=>m.product===sku.product&&m.colour===sku.color);
+    const hasAmz=!!masterEntry?.asin||!!amzE;
+    const hasSw=!!masterEntry?.swiggyId||!!swE;
+    const hasBl=!!masterEntry?.blinkitId||!!blE;
+    const hasWeb=!!webE; // Website: always show N/A until a log entry exists
+
+    html+=`<tr class="summary-row${hasRevisit?' has-revisit':''}" data-product="${esc(sku.product)}">
+      <td class="chevron-cell">${hasDetail?`<button class="chevron-btn" id="btn-${detailId}" onclick="toggleDetail('${detailId}',this)">${svgChevron()}</button>`:''}</td>
+      <td><strong style="font-size:13px;font-weight:600;">${esc(sku.product)}</strong></td>
+      <td style="font-size:13px;color:var(--ink-2);">${esc(sku.color)}${revisitBadge}</td>
+      <td class="text-right">${hasAmz?priceBlockHtml(amzE):'<div class="price-block"><span class="na-cell">N/A</span></div>'}</td>
+      <td class="text-right">${hasSw?priceBlockHtml(swE):'<div class="price-block"><span class="na-cell">N/A</span></div>'}</td>
+      <td class="text-right">${hasBl?priceBlockHtml(blE):'<div class="price-block"><span class="na-cell">N/A</span></div>'}</td>
+      <td class="text-right">${hasWeb?priceBlockHtml(webE):'<div class="price-block"><span class="na-cell">N/A</span></div>'}</td>
+      <td class="date-cell">${fmtDate(sku.lastChanged)}</td>
+      <td style="font-size:13px;font-weight:600;color:var(--ink-2);">${esc(sku.lastApprover)||'<span style="color:var(--ink-4);font-weight:400;">—</span>'}</td>
+      <td style="text-align:right;"><button class="chart-btn" onclick="openChart('${esc(sku.product)}','${esc(sku.color)}')" title="Price history"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="2,12 6,7 9,10 14,4"/></svg> Chart</button></td>
+    </tr>`;
+
+    // Detail dropdown
+    html+=`<tr class="detail-row" id="${detailId}"><td colspan="10"><div class="detail-inner">`;
+    for(const {ch,entry} of channelEntries){
+      const cls=chClass(ch);
+      const pChanged=entry.oldPrice&&entry.newPrice!==entry.oldPrice;
+      const up=entry.newPrice>(entry.oldPrice||0);
+      html+=`<div class="channel-entry">
+        <span class="channel-entry-badge ${cls}">${esc(ch)}</span>
+        <div class="channel-entry-prices">
+          ${entry.oldPrice?`<span class="channel-entry-old">${fmt(entry.oldPrice)}</span><span class="channel-entry-arrow">→</span>`:''}
+          <span class="channel-entry-new">${fmt(entry.newPrice)}</span>
+          ${pChanged?`<span style="font-family:var(--mono);font-size:10px;margin-left:2px;color:${up?'var(--red)':'var(--green)'};">${up?'▲':'▼'}</span>`:''}
+        </div>
+        <div class="channel-entry-meta">
+          ${entry.reason?`<div class="channel-entry-reason">${esc(entry.reason)}</div>`:''}
+        </div>
+        <div class="channel-entry-right" style="display:flex;align-items:center;gap:14px;flex-shrink:0;margin-left:auto;">
+          <span class="channel-meta-date">${fmtDate(entry.changeDate)}</span>
+          <span class="channel-meta-approver">${entry.approvedBy?esc(entry.approvedBy):'<span style="color:var(--ink-4);font-weight:400;">—</span>'}</span>
+          <button class="chart-btn" onclick="openChart('${esc(entry.product||sku.product)}','${esc(entry.color||sku.color)}','${esc(ch)}')" title="Price history for ${esc(ch)}">
+            <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="2,12 6,7 9,10 14,4"/></svg> Chart
+          </button>
+        </div>
+      </div>`;
+    }
+    html+=`</div></td></tr>`;
+  });
+  document.getElementById('t1Body').innerHTML=html||`<tr><td colspan="10" style="text-align:center;padding:48px;color:var(--ink-4);font-family:var(--mono);font-size:12px;">No entries yet — add a price change to get started</td></tr>`;
+}
+
+// ── TAB 2 ────────────────────────────────────────
+function toggleLock(id){
+  const idx=priceLog.findIndex(e=>e.id===id);if(idx<0)return;
+  priceLog[idx].locked=!priceLog[idx].locked;
+  renderTab2();
+  showToast(priceLog[idx].locked?'Entry locked':'Entry unlocked');
+}
+
+function renderTab2(){
+  let rows=[...priceLog];
+  const qProd=getVal('t2SearchProd');
+  const qDate=getVal('t2SearchDate');
+  const qApprover=getVal('t2SearchApprover');
+  const qChannel=getVal('t2ChannelFilter');
+  if(activeProduct)rows=rows.filter(r=>r.product===activeProduct);
+  if(qProd)rows=rows.filter(r=>`${r.product} ${r.color}`.toLowerCase().includes(qProd));
+  if(qDate)rows=rows.filter(r=>fmtDate(r.changeDate).toLowerCase().includes(qDate));
+  if(qApprover)rows=rows.filter(r=>(r.approvedBy||'').toLowerCase().includes(qApprover));
+  if(qChannel)rows=rows.filter(r=>r.channel.toLowerCase()===qChannel);
+  rows=sortSkus(rows,'t2');
+  document.getElementById('cnt2').textContent=priceLog.length;
+
+  document.getElementById('t2Body').innerHTML=rows.map(r=>{
+    const pChanged=r.oldPrice&&r.newPrice!==r.oldPrice;
+    const up=r.newPrice>(r.oldPrice||0);
+    const srcClass=r.source==='CHAT'?'badge-blue':r.source==='EMAIL'?'badge-green':'badge-gray';
+    const cls=chClass(r.channel);
+    const hasR=r.revisit&&new Date(r.revisit)>new Date(Date.now()-86400000*7);
+    const isLocked=r.locked||false;
+    const lockIcon=isLocked?'🔒':'🔓';
+    return`<tr data-product="${esc(r.product)}"${hasR?' class="has-revisit"':''}>
+      <td><strong style="font-size:13px;font-weight:600;">${esc(r.product)}</strong></td>
+      <td style="font-size:13px;color:var(--ink-2);">${esc(r.color)}</td>
+      <td><span class="channel-entry-badge ${cls}" style="font-size:10px;padding:2px 8px;border-radius:4px;">${esc(r.channel)}</span></td>
+      <td class="text-right"><span style="font-family:var(--mono);font-size:12px;color:var(--ink-3);">${r.oldPrice?fmt(r.oldPrice):'—'}</span></td>
+      <td class="text-right"><span style="font-family:var(--mono);font-size:13px;font-weight:500;">${fmt(r.newPrice)}</span>${pChanged?`<span style="font-family:var(--mono);font-size:9px;margin-left:3px;color:${up?'var(--red)':'var(--green)'};">${up?'▲':'▼'}</span>`:''}</td>
+      <td class="date-cell">${fmtDate(r.changeDate)}</td>
+      <td style="font-size:13px;font-weight:600;color:var(--ink-2);">${esc(r.approvedBy)||'<span style="color:var(--ink-4);font-weight:400;">—</span>'}</td>
+      <td class="reason-cell">${esc(r.reason)}</td>
+      <td class="date-cell">${r.revisit?`<span style="color:var(--red);">${fmtDate(r.revisit)}</span>`:'<span style="color:var(--ink-4);">—</span>'}</td>
+      <td><span class="badge ${srcClass}">${esc(r.source||'MANUAL')}</span></td>
+      <td>
+        <div class="row-actions">
+          <button class="lock-btn${isLocked?' locked':''}" onclick="toggleLock(${r.id})" title="${isLocked?'Unlock':'Lock'} entry">${lockIcon}</button>
+          ${isLocked?'':`<button class="edit-btn" onclick="openDrawer(${r.id})">Edit</button>`}
+          ${isLocked?'':`<button class="del-btn" onclick="openDeleteConfirm(${r.id})">Del</button>`}
+        </div>
+      </td>
+    </tr>`;
+  }).join('')||`<tr><td colspan="11" style="text-align:center;padding:48px;color:var(--ink-4);font-family:var(--mono);font-size:12px;">No entries yet</td></tr>`;
+}
+
+// ── TAB 3 ────────────────────────────────────────
+function renderTab3(){
+  updateDateRows();
+  const approvedMap={};
+  const skus=getLatestPerSku();
+  for(const s of skus){
+    const amzE=getLatestPerChannel(s.product,s.color,'Amazon');
+    if(amzE)approvedMap[`${s.product}|${s.color}`]=amzE.newPrice;
+  }
+  const rows=[];const seen=new Set();
+  for(const a of channelData.amazon){
+    const key=`${a.product}|${a.color}`;if(seen.has(key))continue;seen.add(key);
+    const approved=approvedMap[key]||a.price;
+    const amzP=a.price;
+    const swP=channelData.swiggy.find(s=>s.product===a.product&&s.color===a.color)?.price||null;
+    const blP=channelData.blinkit.find(b=>b.product===a.product&&b.color===a.color)?.price||null;
+    const webP=channelData.website.find(w=>w.product===a.product&&w.color===a.color)?.price||null;
+    // Also check price log for Website channel
+    const webLogE=getLatestPerChannel(a.product,a.color,'Website');
+    const webFinal=webP||webLogE?.newPrice||null;
+    const prices=[amzP,swP,blP,webFinal].filter(p=>p!=null);
+    const avg=prices.length?Math.round(prices.reduce((s,p)=>s+p,0)/prices.length):null;
+    const dev=approved&&avg?approved-avg:null;const devPct=approved&&avg?(approved-avg)/avg*100:null;
+    let dc='dev-green',db='badge-green';
+    if(devPct!=null){const abs=Math.abs(devPct);if(abs>15){dc='dev-red';db='badge-red';}else if(abs>5){dc='dev-amber';db='badge-amber';}}
+    rows.push({...a,approved,amzP,swP,blP,webP:webFinal,avg,dev,devPct,dc,db});
+  }
+  const devF=document.getElementById('t3DevFilter')?.value||'';
+  const qProd=getVal('t3SearchProd');
+  let filtered=rows.filter(r=>{
+    if(activeProduct&&r.product!==activeProduct)return false;
+    if(qProd&&!`${r.product} ${r.color}`.toLowerCase().includes(qProd))return false;
+    if(devF){const abs=r.devPct!=null?Math.abs(r.devPct):0;if(devF==='ok'&&abs>5)return false;if(devF==='warn'&&(abs<=5||abs>15))return false;if(devF==='alert'&&abs<=15)return false;}
+    return true;
+  });
+  const s=sortState.t3;
+  if(s.col){
+    filtered.sort((a,b)=>{
+      if(s.col==='deviation'){
+        const va=a.devPct!=null?a.devPct:-Infinity;
+        const vb=b.devPct!=null?b.devPct:-Infinity;
+        return(va-vb)*s.dir;
+      }
+      return(a[s.col==='product'?'product':'color']||'').localeCompare(b[s.col==='product'?'product':'color']||'')*s.dir;
+    });
+  }
+  document.getElementById('cnt3').textContent=rows.length;
+  document.getElementById('t3Body').innerHTML=filtered.map(r=>`
+    <tr>
+      <td><strong style="font-size:13px;font-weight:600;">${esc(r.product)}</strong></td>
+      <td style="font-size:13px;color:var(--ink-2);">${esc(r.color)}</td>
+      <td class="text-right"><span style="font-family:var(--mono);font-size:13px;font-weight:500;">${fmt(r.approved)}</span></td>
+      <td class="text-right"><span style="font-family:var(--mono);font-size:13px;">${r.amzP?fmt(r.amzP):'<span class="na-cell">N/A</span>'}</span></td>
+      <td class="text-right"><span style="font-family:var(--mono);font-size:13px;">${r.swP?fmt(r.swP):'<span class="na-cell">N/A</span>'}</span></td>
+      <td class="text-right"><span style="font-family:var(--mono);font-size:13px;">${r.blP?fmt(r.blP):'<span class="na-cell">N/A</span>'}</span></td>
+      <td class="text-right"><span style="font-family:var(--mono);font-size:13px;">${r.webP?fmt(r.webP):'<span class="na-cell">N/A</span>'}</span></td>
+      <td class="text-right"><span style="font-family:var(--mono);font-size:13px;">${r.avg?fmt(r.avg):'<span class="na-cell">N/A</span>'}</span></td>
+      <td class="text-right"><span class="badge ${r.db}">${r.devPct!=null?(r.devPct>=0?'+':'')+r.devPct.toFixed(1)+'%':'<span class="na-cell" style="font-size:10px;">N/A</span>'}</span></td>
+    </tr>`).join('');
+}
+
+// ── TAB 4 ────────────────────────────────────────
+function renderTab4(){
+  updateDateRows();
+  const rows=[];const seen=new Set();
+  for(const a of channelData.amazon){
+    const key=`${a.product}|${a.color}`;if(seen.has(key))continue;seen.add(key);
+    const sw=channelData.swiggy.find(s=>s.product===a.product&&s.color===a.color);
+    const bl=channelData.blinkit.find(b=>b.product===a.product&&b.color===a.color);
+    const web=channelData.website.find(w=>w.product===a.product&&w.color===a.color);
+    rows.push({...a,swiggyPrice:sw?.price||null,blinkitPrice:bl?.price||null,websitePrice:web?.price||null});
+  }
+  const availF=document.getElementById('t4AvailFilter')?.value||'';
+  const qProd=getVal('t4SearchProd');
+  let filtered=rows.filter(r=>{
+    if(activeProduct&&r.product!==activeProduct)return false;
+    if(qProd&&!`${r.product} ${r.color} ${r.category}`.toLowerCase().includes(qProd))return false;
+    if(availF==='avail'&&r.availability!=='Avail')return false;
+    if(availF==='unavail'&&r.availability==='Avail')return false;
+    return true;
+  });
+  const s=sortState.t4;
+  if(s.col)filtered.sort((a,b)=>(a[s.col==='product'?'product':'color']||'').localeCompare(b[s.col==='product'?'product':'color']||'')*s.dir);
+  document.getElementById('cnt4').textContent=rows.length;
+  document.getElementById('t4Body').innerHTML=filtered.map(r=>{
+    const avail=r.availability==='Avail';
+    return`<tr>
+      <td><strong style="font-size:13px;font-weight:600;">${esc(r.product)}</strong></td>
+      <td style="font-size:13px;color:var(--ink-2);">${esc(r.color)}</td>
+      <td style="font-size:11px;color:var(--ink-3);">${esc(r.category)}</td>
+      <td class="text-right"><span style="font-family:var(--mono);font-size:13px;">${fmt(r.price)}</span></td>
+      <td class="text-right"><span class="avail-dot ${avail?'green':'red'}"></span><span style="font-family:var(--mono);font-size:11px;color:${avail?'var(--green)':'var(--red)'};">${avail?'Live':'OOS'}</span></td>
+      <td class="text-right"><span style="font-family:var(--mono);font-size:13px;color:var(--ink-3);">${r.swiggyPrice?fmt(r.swiggyPrice):'<span style="color:var(--ink-4);font-size:11px;">—</span>'}</span></td>
+      <td class="text-right"><span style="font-family:var(--mono);font-size:13px;color:var(--ink-3);">${r.blinkitPrice?fmt(r.blinkitPrice):'<span style="color:var(--ink-4);font-size:11px;">—</span>'}</span></td>
+      <td class="text-right"><span style="font-family:var(--mono);font-size:13px;color:var(--ink-3);">${r.websitePrice?fmt(r.websitePrice):'<span style="color:var(--ink-4);font-size:11px;">—</span>'}</span></td>
+      <td class="text-right"><span style="font-family:var(--mono);font-size:13px;color:var(--ink-3);">${fmt(r.mrp)}</span></td>
+    </tr>`;}).join('');
+}
+
+// ── TAB 5: MASTER SKU ────────────────────────────
+function renderTab5(){
+  const q=(document.getElementById('t5Search')?.value||'').toLowerCase();
+  let rows=[...MASTER_SKUS];
+  if(q)rows=rows.filter(r=>`${r.product} ${r.colour} ${r.sku} ${r.asin} ${r.swiggyId} ${r.blinkitId}`.toLowerCase().includes(q));
+  const s=sortState.t5;
+  if(s.col)rows.sort((a,b)=>(a[s.col==='product'?'product':'colour']||'').localeCompare(b[s.col==='product'?'product':'colour']||'')*s.dir);
+  document.getElementById('cnt5').textContent=MASTER_SKUS.length;
+  document.getElementById('t5Body').innerHTML=rows.map(r=>`
+    <tr>
+      <td><strong style="font-size:13px;font-weight:600;">${esc(r.product)}</strong></td>
+      <td style="font-size:13px;color:var(--ink-2);">${esc(r.colour)}</td>
+      <td><span class="sku-id-pill">${esc(r.sku)}</span></td>
+      <td>${r.asin?`<span class="sku-id-pill">${esc(r.asin)}</span>`:'<span class="na-cell">N/A</span>'}</td>
+      <td>${r.swiggyId?`<span class="sku-id-pill">${esc(r.swiggyId)}</span>`:'<span class="na-cell">N/A</span>'}</td>
+      <td>${r.blinkitId?`<span class="sku-id-pill">${esc(r.blinkitId)}</span>`:'<span class="na-cell">N/A</span>'}</td>
+    </tr>`).join('');
+}
+
+// ── DETAIL TOGGLE ────────────────────────────────
+function toggleDetail(id,btn){const row=document.getElementById(id);if(!row)return;const open=row.classList.toggle('open');btn.classList.toggle('open',open);}
+
+// ── DRAWER ───────────────────────────────────────
+function openDrawer(id){
+  const e=priceLog.find(e=>e.id===id);if(!e)return;editingId=id;
+  document.getElementById('dProduct').value=e.product;
+  document.getElementById('dColor').value=e.color;
+  document.getElementById('dChannel').value=e.channel;
+  document.getElementById('dOldPrice').value=e.oldPrice||'';
+  document.getElementById('dNewPrice').value=e.newPrice||'';
+  document.getElementById('dChangeDate').value=e.changeDate||'';
+  document.getElementById('dRevisit').value=e.revisit||'';
+  document.getElementById('dApprover').value=e.approvedBy||'';
+  document.getElementById('dReason').value=e.reason||'';
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('drawerOverlay').classList.add('open');
+}
+function closeDrawer(){document.getElementById('drawer').classList.remove('open');document.getElementById('drawerOverlay').classList.remove('open');editingId=null;}
+function saveDrawer(){
+  if(!editingId)return;
+  const idx=priceLog.findIndex(e=>e.id===editingId);if(idx<0)return;
+  priceLog[idx]={...priceLog[idx],
+    product:document.getElementById('dProduct').value.trim(),
+    color:document.getElementById('dColor').value.trim(),
+    channel:document.getElementById('dChannel').value,
+    oldPrice:Number(document.getElementById('dOldPrice').value)||null,
+    newPrice:Number(document.getElementById('dNewPrice').value)||priceLog[idx].newPrice,
+    changeDate:document.getElementById('dChangeDate').value,
+    revisit:document.getElementById('dRevisit').value||null,
+    approvedBy:document.getElementById('dApprover').value.trim(),
+    reason:document.getElementById('dReason').value.trim(),
+  };
+  closeDrawer();applyFilters();showToast('Entry updated');pushToSheet('editEntry',priceLog[idx]);
+}
+
+// ── DELETE ───────────────────────────────────────
+function openDeleteConfirm(id){
+  const e=priceLog.find(e=>e.id===id);if(!e)return;
+  deleteTargetId=id;
+  document.getElementById('deleteConfirmText').textContent=`Delete log entry for ${e.product} – ${e.color} (${e.channel}) on ${fmtDate(e.changeDate)}? This cannot be undone.`;
+  document.getElementById('deleteModal').classList.add('open');
+}
+function confirmDelete(){
+  if(!deleteTargetId)return;
+  priceLog=priceLog.filter(e=>e.id!==deleteTargetId);
+  deleteTargetId=null;
+  closeModal('deleteModal');applyFilters();showToast('Entry deleted');
+}
+
+// ── ADD MODAL ────────────────────────────────────
+function openAddRow(){
+  const today=new Date().toISOString().split('T')[0];
+  populateProductDropdown();
+  document.getElementById('mProduct').value='';
+  document.getElementById('mColor').innerHTML='<option value="">— select product first —</option>';
+  document.getElementById('mChannel').value='All';
+  ['mOldPrice','mNewPrice','mApprover','mReason'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('mChangeDate').value=today;
+  document.getElementById('mRevisit').value='';
+  document.getElementById('addModal').classList.add('open');
+}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function submitAddRow(){
+  const product=document.getElementById('mProduct').value.trim();
+  const colorSel=document.getElementById('mColor').value.trim();
+  const newPrice=Number(document.getElementById('mNewPrice').value);
+  const changeDate=document.getElementById('mChangeDate').value;
+  if(!product||!colorSel||!newPrice||!changeDate){showToast('Fill required fields: Product, Color, New Price, Change Date');return;}
+  const channelSel=document.getElementById('mChannel').value;
+  const channels=channelSel==='All'?CHANNELS:[channelSel];
+  // Expand All colours → every colour of this product
+  const colors=colorSel==='__ALL__'?getColoursForProduct(product):[colorSel];
+  let count=0;
+  for(const color of colors){
+    for(const ch of channels){
+      priceLog.push({
+        id:nextLogId++,product,color,channel:ch,
+        oldPrice:Number(document.getElementById('mOldPrice').value)||null,
+        newPrice,changeDate,
+        revisit:document.getElementById('mRevisit').value||null,
+        approvedBy:document.getElementById('mApprover').value.trim(),
+        reason:document.getElementById('mReason').value.trim(),
+        source:'MANUAL',ts:new Date().toISOString(),
+        locked:false,
+      });
+      count++;
+    }
+  }
+  closeModal('addModal');applyFilters();
+  showToast(`${count} log ${count===1?'entry':'entries'} added`);
+  pushToSheet('addEntry',{product,color:colorSel,channel:channelSel,newPrice,changeDate});
+}
+
+// ── CC EMAIL ─────────────────────────────────────
+function handleCCAction(){
+  if(ccLocked){const pw=window.prompt('Admin password to unlock:');if(pw==='nuuk2026'){ccLocked=false;renderCCField();}return;}
+  const cur=document.getElementById('ccDisplay');
+  if(cur.tagName==='INPUT'){
+    const val=cur.value.trim();
+    if(val&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)){showToast('Enter a valid email');return;}
+    ccEmail=val;ccLocked=!!val;renderCCField();if(val)showToast('CC email saved');
+  }else{renderCCField(true);}
+}
+function renderCCField(editing=false){
+  const display=document.getElementById('ccDisplay');
+  const btn=document.getElementById('ccLockBtn');
+  const tpl=document.getElementById('emailTemplateCC');
+  if(ccLocked){
+    display.outerHTML=`<span id="ccDisplay" class="cc-locked-val">${esc(ccEmail)}</span>`;
+    btn.textContent='🔒 Locked';
+    if(tpl)tpl.textContent=ccEmail;
+  }else if(editing){
+    display.outerHTML=`<input id="ccDisplay" class="cc-input" type="email" placeholder="approvals@nuuk.in" value="${esc(ccEmail)}">`;
+    btn.textContent='Save & lock';
+  }else{
+    display.outerHTML=`<span id="ccDisplay" class="cc-locked-val" style="color:var(--ink-4);">${ccEmail||'not set'}</span>`;
+    btn.textContent='Set email';
+    if(tpl&&ccEmail)tpl.textContent=ccEmail;
+  }
+}
+function showEmailTemplate(){document.getElementById('emailModal').classList.add('open');}
+function copyEmailTemplate(){
+  const cc=ccEmail||'[pricing inbox email]';
+  navigator.clipboard.writeText(`TO: [founder / approver email]\nCC: ${cc}\nSUBJECT: PRICE CHANGE - [PRODUCT] - [COLOR or ALL] - [CHANNEL or ALL]\n\nProduct: BFF\nColor: Tokyo Totti Candy\nChannel: Amazon\nOld Price: ₹2,499\nNew Price: ₹2,999\nChange Date: 20 May 2026\nReason: Initial pricing for new SKU launch\nRevisit Date: 01 Jul 2026 (optional)`).then(()=>showToast('Template copied'));
+}
+
+// ── CHART ────────────────────────────────────────
+const CHANNEL_COLORS={Amazon:'#f59e0b',Swiggy:'#ef4444',Blinkit:'#22c55e'};
+function openChart(product,color,channel=''){
+  document.getElementById('chartTitle').textContent=`${product} — ${color}${channel?' · '+channel:''}`;
+  document.getElementById('chartSubtitle').textContent=channel?`Price history for ${channel}`:'Price history across all channels from full log';
+  document.getElementById('chartModal').classList.add('open');
+  requestAnimationFrame(()=>drawChart(product,color,channel));
+}
+function drawChart(product,color,filterChannel=''){
+  const canvas=document.getElementById('chartCanvas');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.offsetWidth||620,H=300;
+  canvas.width=W*2;canvas.height=H*2;canvas.style.width=W+'px';canvas.style.height=H+'px';
+  ctx.scale(2,2);
+  const seriesData={};
+  const channelsToShow=filterChannel?[filterChannel]:CHANNELS;
+  for(const ch of channelsToShow){
+    const entries=priceLog.filter(e=>e.product===product&&e.color===color&&e.channel===ch).sort((a,b)=>new Date(a.changeDate)-new Date(b.changeDate));
+    if(entries.length>0)seriesData[ch]=entries.map(e=>({date:new Date(e.changeDate),price:e.newPrice}));
+  }
+  if(Object.keys(seriesData).length===0){ctx.clearRect(0,0,W,H);ctx.fillStyle='#a8a8c0';ctx.font='13px Inter,sans-serif';ctx.textAlign='center';ctx.fillText('No price history for this SKU',W/2,H/2);document.getElementById('chartLegend').innerHTML='';return;}
+  let allDates=[],allPrices=[];
+  for(const ch of Object.keys(seriesData)){seriesData[ch].forEach(d=>{allDates.push(d.date);allPrices.push(d.price);});}
+  const minDate=Math.min(...allDates.map(d=>d.getTime()));
+  const maxDate=Math.max(...allDates.map(d=>d.getTime()));
+  const minPrice=Math.min(...allPrices)*0.92,maxPrice=Math.max(...allPrices)*1.06;
+  const pad={l:72,r:20,t:20,b:40};const cW=W-pad.l-pad.r,cH=H-pad.t-pad.b;
+  const xScale=d=>pad.l+(maxDate===minDate?cW/2:(d.getTime()-minDate)/(maxDate-minDate)*cW);
+  const yScale=p=>pad.t+cH-(p-minPrice)/(maxPrice-minPrice)*cH;
+  ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle='rgba(26,26,46,0.07)';ctx.lineWidth=0.5;
+  for(let i=0;i<=5;i++){const y=pad.t+(cH/5)*i;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();const price=maxPrice-(maxPrice-minPrice)*(i/5);ctx.fillStyle='#a8a8c0';ctx.font='10px DM Mono,monospace';ctx.textAlign='right';ctx.fillText('₹'+Math.round(price).toLocaleString('en-IN'),pad.l-6,y+3.5);}
+  for(const ch of Object.keys(seriesData)){
+    const pts=seriesData[ch];const color=CHANNEL_COLORS[ch]||'#6c5ce7';
+    const today=new Date();const extended=[...pts];
+    if(pts.length>0&&today>pts[pts.length-1].date)extended.push({...pts[pts.length-1],date:today});
+    ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=2;ctx.lineJoin='round';
+    extended.forEach((p,i)=>{i===0?ctx.moveTo(xScale(p.date),yScale(p.price)):ctx.lineTo(xScale(p.date),yScale(p.price));});ctx.stroke();
+    ctx.beginPath();ctx.fillStyle=color+'22';ctx.moveTo(xScale(extended[0].date),pad.t+cH);
+    extended.forEach(p=>ctx.lineTo(xScale(p.date),yScale(p.price)));
+    ctx.lineTo(xScale(extended[extended.length-1].date),pad.t+cH);ctx.closePath();ctx.fill();
+    pts.forEach(p=>{const x=xScale(p.date),y=yScale(p.price);ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();ctx.fillStyle='#1a1a2e';ctx.font='10px DM Mono,monospace';ctx.textAlign='center';ctx.fillText(p.date.toLocaleDateString('en-IN',{day:'2-digit',month:'short'}),x,H-pad.b+14);});
+  }
+  ctx.strokeStyle='rgba(26,26,46,0.1)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(pad.l,pad.t+cH);ctx.lineTo(W-pad.r,pad.t+cH);ctx.stroke();
+  document.getElementById('chartLegend').innerHTML=Object.keys(seriesData).map(ch=>`<div class="chart-legend-item"><div class="legend-dot" style="background:${CHANNEL_COLORS[ch]};"></div>${ch}</div>`).join('');
+}
+
+// ── FILE UPLOADS ─────────────────────────────────
+function handleUpload(input,channel,lastUpdateId,successId){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      if(channel==='amazon')parseAmazonBuybox(wb);else parseGenericChannel(wb,channel);
+      const today=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+      document.getElementById(lastUpdateId).textContent='Updated: '+today;
+      document.getElementById(successId).classList.add('show');
+      // Store upload date for use in Tab 3 and Tab 4 headers
+      channelUploadDates[channel.toLowerCase()]=today;
+      applyFilters();showToast(`${channel} data loaded · ${channelData[channel.toLowerCase()].length} SKUs`);
+    }catch(err){showToast('Error parsing file: '+err.message);}
+  };reader.readAsArrayBuffer(file);
+}
+function parseAmazonBuybox(wb){
+  const ws=wb.Sheets[wb.SheetNames[0]];const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+  let hr=-1;for(let i=0;i<raw.length;i++){if(raw[i].some(c=>String(c).toLowerCase().includes('asin'))){hr=i;break;}}
+  if(hr<0){showToast('Could not find header row');return;}
+  const headers=raw[hr].map(h=>String(h).trim().toLowerCase());
+  const ci=k=>headers.findIndex(h=>h.includes(k));
+  const iP=ci('product'),iM=ci('mrp'),iPr=ci('price'),iA=ci('avail'),iC=ci('sub');
+  const parsed=[];
+  for(let i=hr+1;i<raw.length;i++){
+    const row=raw[i];if(!row[1]||!row[iP])continue;
+    const pf=String(row[iP]).trim();const parts=pf.split(/\s*[-_]\s*/);
+    parsed.push({product:parts[0].trim(),color:parts.length>1?parts.slice(1).join(' - ').trim():'All',mrp:Number(row[iM])||null,price:Number(row[iPr])||null,availability:String(row[iA]||'').trim(),channel:'Amazon',category:iC>=0?String(row[iC]||'').trim():''});
+  }
+  channelData.amazon=parsed;
+}
+function parseGenericChannel(wb,channel){
+  const ws=wb.Sheets[wb.SheetNames[0]];const raw=XLSX.utils.sheet_to_json(ws,{defval:''});
+  const key=channel.toLowerCase(); // 'swiggy', 'blinkit', 'website'
+  channelData[key]=raw.map(r=>({product:String(r.Product||r.product||'').trim(),color:String(r.Color||r.color||'All').trim(),price:Number(r.Price||r.price||r['Listed Price']||0)||null,availability:'Avail',channel:channel})).filter(r=>r.product);
+}
+function dragOver(e,z){e.preventDefault();document.getElementById(z).classList.add('drag');}
+function dragLeave(z){document.getElementById(z).classList.remove('drag');}
+function dropFile(e,fid,z,ch){e.preventDefault();dragLeave(z);const f=e.dataTransfer.files;if(f.length){const inp=document.getElementById(fid);const dt=new DataTransfer();dt.items.add(f[0]);inp.files=dt.files;inp.dispatchEvent(new Event('change'));}}
+
+// ── SHEETS ───────────────────────────────────────
+async function pushToSheet(action,data){if(!CONFIG.WEB_APP_URL||CONFIG.WEB_APP_URL.includes('YOUR_'))return;try{await fetch(CONFIG.WEB_APP_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,data})});}catch(e){}}
+async function fetchFromSheet(){if(!CONFIG.SHEET_URL||CONFIG.SHEET_URL.includes('YOUR_'))return;try{const res=await fetch(CONFIG.SHEET_URL);const json=await res.json();const rows=json.feed?.entry||[];const fetched=rows.map((e,i)=>{const c=k=>e['gsx$'+k]?.$t||'';return{id:i+1,product:c('product'),color:c('color'),channel:c('channel'),oldPrice:Number(c('oldprice'))||null,newPrice:Number(c('newprice'))||null,changeDate:c('changedate'),approvedBy:c('approvedby'),reason:c('reason'),revisit:c('revisitdate')||null,source:c('source')||'MANUAL',ts:c('timestamp')||new Date().toISOString()};}).filter(r=>r.product);if(fetched.length){priceLog=fetched;nextLogId=Math.max(...fetched.map(r=>r.id))+1;applyFilters();}}catch(e){}}
+
+// ── INIT ─────────────────────────────────────────
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('lastSync').textContent=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short'});
+  populateProductDropdown();
+  applyFilters();
+  fetchFromSheet();
+});
+</script>
+</body>
+</html>
