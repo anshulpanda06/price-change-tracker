@@ -318,6 +318,25 @@ tr.detail-row td{padding:0;border-bottom:1px solid var(--line);background:var(--
 /* MISC */
 .nowrap{white-space:nowrap;}
 .channel-col{min-width:88px;}
+
+/* UPLOAD DATE EDITABLE */
+.upload-date-wrap{display:flex;align-items:center;gap:6px;margin-top:10px;padding-top:8px;border-top:1px solid var(--line-2);}
+.upload-date-label{font-family:var(--mono);font-size:10px;color:var(--ink-4);font-weight:500;white-space:nowrap;text-transform:uppercase;letter-spacing:.06em;}
+.upload-date-val{font-family:var(--mono);font-size:11px;color:var(--ink-2);font-weight:500;cursor:pointer;padding:2px 6px;border-radius:4px;border:1px solid transparent;transition:all .13s;}
+.upload-date-val:hover{border-color:var(--purple);color:var(--purple);background:var(--purple-bg);}
+.upload-date-val.auto{color:var(--green);}
+.upload-date-val.manual{color:var(--amber);}
+.upload-date-input{font-family:var(--mono);font-size:11px;padding:2px 6px;border:1px solid var(--purple);border-radius:4px;background:var(--paper);color:var(--ink);outline:none;width:130px;}
+.upload-date-src{font-family:var(--mono);font-size:9px;padding:1px 5px;border-radius:3px;margin-left:2px;}
+.upload-date-src.auto{background:var(--green-bg);color:var(--green);}
+.upload-date-src.manual{background:var(--amber-bg);color:var(--amber);}
+.upload-date-src.now{background:var(--blue-bg);color:var(--blue);}
+
+/* INPUT DATE column in Tab 2 */
+.input-date-cell{font-family:var(--mono);font-size:10px;color:var(--ink-3);white-space:nowrap;}
+.input-date-edit{display:inline-flex;align-items:center;gap:3px;cursor:pointer;border-bottom:1px dashed var(--ink-4);padding-bottom:1px;transition:color .13s;}
+.input-date-edit:hover{color:var(--purple);border-color:var(--purple);}
+.input-date-inline{font-family:var(--mono);font-size:10px;padding:1px 5px;border:1px solid var(--purple);border-radius:3px;background:var(--paper);color:var(--ink);outline:none;width:120px;}
 </style>
 </head>
 <body>
@@ -437,6 +456,7 @@ tr.detail-row td{padding:0;border-bottom:1px solid var(--line);background:var(--
           <th class="text-right">Old Price</th>
           <th class="text-right">New Price</th>
           <th class="sortable" onclick="sortTable('t2','date')">Changed</th>
+          <th class="sortable" onclick="sortTable('t2','inputDate')" title="Date this entry was recorded in the system">Input Date</th>
           <th>Approved By</th>
           <th class="reason-cell" style="min-width:220px;">Reason</th>
           <th>Revisit</th>
@@ -505,6 +525,11 @@ tr.detail-row td{padding:0;border-bottom:1px solid var(--line);background:var(--
             <div class="upload-icon">⬆</div><div class="upload-zone-label">Upload Buybox Report</div>
             <div class="upload-zone-sub">.xlsx · Nuuk Report format</div><div class="upload-success" id="amzSuccess">✓ File loaded</div>
           </div>
+          <div class="upload-date-wrap" id="amzDateWrap">
+            <span class="upload-date-label">Data date:</span>
+            <span id="amzInputDate" class="upload-date-val auto" onclick="editUploadDate('amazon')">04 Jun 2026</span>
+            <span class="upload-date-src auto" id="amzInputDateSrc">file</span>
+          </div>
         </div>
       </div>
       <div class="channel-upload-card">
@@ -514,6 +539,11 @@ tr.detail-row td{padding:0;border-bottom:1px solid var(--line);background:var(--
             <input type="file" id="swiggyFile" accept=".xlsx,.xls,.csv" onchange="handleUpload(this,'swiggy','swiggyLastUpdate','swiggySuccess')">
             <div class="upload-icon">⬆</div><div class="upload-zone-label">Upload Price Dump</div>
             <div class="upload-zone-sub">.xlsx or .csv</div><div class="upload-success" id="swiggySuccess">✓ File loaded</div>
+          </div>
+          <div class="upload-date-wrap" id="swiggyDateWrap" style="display:none;">
+            <span class="upload-date-label">Data date:</span>
+            <span id="swiggyInputDate" class="upload-date-val" onclick="editUploadDate('swiggy')">—</span>
+            <span class="upload-date-src now" id="swiggyInputDateSrc">upload</span>
           </div>
         </div>
       </div>
@@ -525,6 +555,11 @@ tr.detail-row td{padding:0;border-bottom:1px solid var(--line);background:var(--
             <div class="upload-icon">⬆</div><div class="upload-zone-label">Upload Price Dump</div>
             <div class="upload-zone-sub">.xlsx or .csv</div><div class="upload-success" id="blinkitSuccess">✓ File loaded</div>
           </div>
+          <div class="upload-date-wrap" id="blinkitDateWrap" style="display:none;">
+            <span class="upload-date-label">Data date:</span>
+            <span id="blinkitInputDate" class="upload-date-val" onclick="editUploadDate('blinkit')">—</span>
+            <span class="upload-date-src now" id="blinkitInputDateSrc">upload</span>
+          </div>
         </div>
       </div>
       <div class="channel-upload-card">
@@ -534,6 +569,11 @@ tr.detail-row td{padding:0;border-bottom:1px solid var(--line);background:var(--
             <input type="file" id="websiteFile" accept=".xlsx,.xls,.csv" onchange="handleUpload(this,'website','websiteLastUpdate','websiteSuccess')">
             <div class="upload-icon">⬆</div><div class="upload-zone-label">Upload Price Dump</div>
             <div class="upload-zone-sub">.xlsx or .csv</div><div class="upload-success" id="websiteSuccess">✓ File loaded</div>
+          </div>
+          <div class="upload-date-wrap" id="websiteDateWrap" style="display:none;">
+            <span class="upload-date-label">Data date:</span>
+            <span id="websiteInputDate" class="upload-date-val" onclick="editUploadDate('website')">—</span>
+            <span class="upload-date-src now" id="websiteInputDateSrc">upload</span>
           </div>
         </div>
       </div>
@@ -617,6 +657,7 @@ tr.detail-row td{padding:0;border-bottom:1px solid var(--line);background:var(--
       <div class="form-group"><label class="form-label">Change Date</label><input class="form-input" id="dChangeDate" type="date"></div>
       <div class="form-group"><label class="form-label">Revisit Date</label><input class="form-input" id="dRevisit" type="date"></div>
     </div>
+    <div class="form-group"><label class="form-label">Input Date <span style="font-family:var(--mono);font-size:10px;color:var(--ink-4);font-weight:400;">· when this entry was recorded in the system</span></label><input class="form-input" id="dInputDate" type="date"></div>
     <div class="form-section">Approval</div>
     <div class="form-group"><label class="form-label">Approved By</label><input class="form-input" id="dApprover"></div>
     <div class="form-group"><label class="form-label">Reason / Notes</label><textarea class="form-textarea" id="dReason"></textarea></div>
@@ -759,7 +800,7 @@ const SEED_LOG_RAW=[
   {product:'DRIP',color:'Elderberry Black',channel:'Amazon',oldPrice:11499,newPrice:10999,changeDate:'2026-05-07',approvedBy:'',reason:'May ART: price reduced to increase DRR vs Red.',revisit:null,source:'MANUAL',ts:'2026-05-07T09:02:00'},
 ];
 
-let priceLog=SEED_LOG_RAW.map((r,i)=>({...r,id:i+1}));
+let priceLog=SEED_LOG_RAW.map((r,i)=>({...r,id:i+1,inputDate:r.ts?r.ts.split('T')[0]:r.changeDate}));
 let nextLogId=priceLog.length+1;
 
 // Amazon buybox data
@@ -909,6 +950,7 @@ function sortSkus(arr,tab){
     if(s.col==='product'){va=a.product||'';vb=b.product||'';}
     else if(s.col==='color'){va=a.color||'';vb=b.color||'';}
     else if(s.col==='date'){va=a.lastChanged||a.changeDate||'';vb=b.lastChanged||b.changeDate||'';}
+    else if(s.col==='inputDate'){va=a.inputDate||'';vb=b.inputDate||'';}
     return va.localeCompare(vb)*s.dir;
   });
 }
@@ -924,9 +966,15 @@ function applyFilters(){
   else if(activeTab==='tab5')renderTab5();
 }
 
-// Channel upload date tracking
+// Channel upload date tracking — stores {date:string, src:'auto'|'manual'|'now'}
 const channelUploadDates={amazon:'04 Jun 2026',swiggy:null,blinkit:null,website:null};
-// ── UPDATE DATE SUB-ROWS IN TAB 3 & TAB 4 ────────
+// Richer per-channel data date state: {date, src}
+const channelDataDates={
+  amazon:{date:'04 Jun 2026', src:'file'},  // pre-seeded Amazon data uses its report date
+  swiggy:{date:null, src:'now'},
+  blinkit:{date:null, src:'now'},
+  website:{date:null, src:'now'},
+};
 // ── UPDATE CHANNEL DATE BUBBLES ───────────────────
 function updateDateRows(){
   const channels=[
@@ -937,7 +985,8 @@ function updateDateRows(){
   ];
   function buildBubbles(){
     return channels.map(({key,label,cls})=>{
-      const d=channelUploadDates[key];
+      const info=channelDataDates[key];
+      const d=info?.date||channelUploadDates[key];
       const noData=!d;
       return`<div class="ch-bubble ${cls}${noData?' ch-bubble-nodata':''}">
         <span class="ch-bubble-dot"></span>
@@ -1081,6 +1130,8 @@ function renderTab2(){
     const hasR=r.revisit&&new Date(r.revisit)>new Date(Date.now()-86400000*7);
     const isLocked=r.locked||false;
     const lockIcon=isLocked?'🔒':'🔓';
+    // Input Date display — auto-captured timestamp
+    const inputDateDisplay=r.inputDate?fmtDate(r.inputDate):'<span style="color:var(--ink-4);">—</span>';
     return`<tr data-product="${esc(r.product)}"${hasR?' class="has-revisit"':''}>
       <td><strong style="font-size:13px;font-weight:600;">${esc(r.product)}</strong></td>
       <td style="font-size:13px;color:var(--ink-2);">${esc(r.color)}</td>
@@ -1088,6 +1139,7 @@ function renderTab2(){
       <td class="text-right"><span style="font-family:var(--mono);font-size:12px;color:var(--ink-3);">${r.oldPrice?fmt(r.oldPrice):'—'}</span></td>
       <td class="text-right"><span style="font-family:var(--mono);font-size:13px;font-weight:500;">${fmt(r.newPrice)}</span>${pChanged?`<span style="font-family:var(--mono);font-size:9px;margin-left:3px;color:${up?'var(--red)':'var(--green)'};">${up?'▲':'▼'}</span>`:''}</td>
       <td class="date-cell">${fmtDate(r.changeDate)}</td>
+      <td class="input-date-cell">${isLocked?inputDateDisplay:`<span class="input-date-edit" onclick="inlineEditInputDate(${r.id},this)" title="Click to edit input date">${inputDateDisplay}${r.inputDate?'':' <span style=\'font-size:9px;color:var(--ink-4);\'>add</span>'}</span>`}</td>
       <td style="font-size:13px;font-weight:600;color:var(--ink-2);">${esc(r.approvedBy)||'<span style="color:var(--ink-4);font-weight:400;">—</span>'}</td>
       <td class="reason-cell">${esc(r.reason)}</td>
       <td class="date-cell">${r.revisit?`<span style="color:var(--red);">${fmtDate(r.revisit)}</span>`:'<span style="color:var(--ink-4);">—</span>'}</td>
@@ -1100,7 +1152,7 @@ function renderTab2(){
         </div>
       </td>
     </tr>`;
-  }).join('')||`<tr><td colspan="11" style="text-align:center;padding:48px;color:var(--ink-4);font-family:var(--mono);font-size:12px;">No entries yet</td></tr>`;
+  }).join('')||`<tr><td colspan="12" style="text-align:center;padding:48px;color:var(--ink-4);font-family:var(--mono);font-size:12px;">No entries yet</td></tr>`;
 }
 
 // ── TAB 3 ────────────────────────────────────────
@@ -1234,6 +1286,7 @@ function openDrawer(id){
   document.getElementById('dNewPrice').value=e.newPrice||'';
   document.getElementById('dChangeDate').value=e.changeDate||'';
   document.getElementById('dRevisit').value=e.revisit||'';
+  document.getElementById('dInputDate').value=e.inputDate||new Date().toISOString().split('T')[0];
   document.getElementById('dApprover').value=e.approvedBy||'';
   document.getElementById('dReason').value=e.reason||'';
   document.getElementById('drawer').classList.add('open');
@@ -1251,6 +1304,7 @@ function saveDrawer(){
     newPrice:Number(document.getElementById('dNewPrice').value)||priceLog[idx].newPrice,
     changeDate:document.getElementById('dChangeDate').value,
     revisit:document.getElementById('dRevisit').value||null,
+    inputDate:document.getElementById('dInputDate').value||priceLog[idx].inputDate,
     approvedBy:document.getElementById('dApprover').value.trim(),
     reason:document.getElementById('dReason').value.trim(),
   };
@@ -1295,6 +1349,7 @@ function submitAddRow(){
   // Expand All colours → every colour of this product
   const colors=colorSel==='__ALL__'?getColoursForProduct(product):[colorSel];
   let count=0;
+  const inputDate=new Date().toISOString().split('T')[0]; // auto-capture today as input date
   for(const color of colors){
     for(const ch of channels){
       priceLog.push({
@@ -1305,6 +1360,7 @@ function submitAddRow(){
         approvedBy:document.getElementById('mApprover').value.trim(),
         reason:document.getElementById('mReason').value.trim(),
         source:'MANUAL',ts:new Date().toISOString(),
+        inputDate,
         locked:false,
       });
       count++;
@@ -1406,11 +1462,188 @@ function handleUpload(input,channel,lastUpdateId,successId){
       const today=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
       document.getElementById(lastUpdateId).textContent='Updated: '+today;
       document.getElementById(successId).classList.add('show');
-      // Store upload date for use in Tab 3 and Tab 4 headers
-      channelUploadDates[channel.toLowerCase()]=today;
-      applyFilters();showToast(`${channel} data loaded · ${channelData[channel.toLowerCase()].length} SKUs`);
+
+      // Try to detect a data date from the file content
+      const detectedDate=detectDataDateFromWorkbook(wb,channel);
+      const ch=channel.toLowerCase();
+
+      if(detectedDate){
+        // Auto-detected from file content
+        channelDataDates[ch]={date:detectedDate,src:'file'};
+        channelUploadDates[ch]=detectedDate;
+        updateUploadDateUI(ch,detectedDate,'auto');
+        showToast(`${channel} data loaded · ${channelData[ch].length} SKUs · Data date: ${detectedDate}`);
+      }else{
+        // Fall back to today as upload date
+        channelDataDates[ch]={date:today,src:'now'};
+        channelUploadDates[ch]=today;
+        updateUploadDateUI(ch,today,'now');
+        showToast(`${channel} data loaded · ${channelData[ch].length} SKUs`);
+      }
+      applyFilters();
     }catch(err){showToast('Error parsing file: '+err.message);}
   };reader.readAsArrayBuffer(file);
+}
+
+// Try to extract a data date from the workbook (checks common column/sheet name patterns)
+function detectDataDateFromWorkbook(wb,channel){
+  try{
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+    // Look for a date in first 5 rows across any cell
+    const datePatterns=[
+      /(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/,          // 04/06/2026
+      /(\d{4}[\/\-]\d{2}[\/\-]\d{2})/,                  // 2026-06-04
+      /(\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{4})/i, // 04 Jun 2026
+      /(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},?\s+\d{4}/i, // Jun 04, 2026
+    ];
+    // First check column headers for 'date', 'report date', 'as of', 'data date'
+    for(let i=0;i<Math.min(5,raw.length);i++){
+      for(let j=0;j<raw[i].length;j++){
+        const cell=String(raw[i][j]||'').trim();
+        const lower=cell.toLowerCase();
+        // If cell looks like a date keyword, check the cell to the right
+        if(/report.?date|as.?of|data.?date|generated|snapshot/i.test(lower)){
+          const nextCell=String(raw[i][j+1]||'').trim();
+          for(const pat of datePatterns){
+            const m=nextCell.match(pat);
+            if(m){
+              const d=new Date(m[0].replace(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/,'$3-$2-$1'));
+              if(!isNaN(d))return d.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+            }
+          }
+        }
+        // If cell itself looks like a date (and not a price/number)
+        if(isNaN(Number(cell))&&cell.length>5){
+          for(const pat of datePatterns){
+            const m=cell.match(pat);
+            if(m){
+              const d=new Date(m[0].replace(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/,'$3-$2-$1'));
+              if(!isNaN(d)&&d.getFullYear()>2020&&d.getFullYear()<2030){
+                return d.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+              }
+            }
+          }
+        }
+      }
+    }
+    // Check for a 'date' column in the data rows
+    const headers=raw[0]?raw[0].map(h=>String(h).toLowerCase()):[];
+    const dateColIdx=headers.findIndex(h=>/^date$|report.?date|data.?date|as.?of/.test(h));
+    if(dateColIdx>=0&&raw[1]){
+      const val=String(raw[1][dateColIdx]||'').trim();
+      for(const pat of datePatterns){
+        const m=val.match(pat);
+        if(m){
+          const d=new Date(m[0].replace(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/,'$3-$2-$1'));
+          if(!isNaN(d))return d.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+        }
+      }
+      // XLSX numeric date serial
+      const num=Number(val);if(num>40000&&num<60000){
+        const d=XLSX.SSF.parse_date_code(num);
+        if(d)return new Date(d.y,d.m-1,d.d).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+      }
+    }
+  }catch(e){}
+  return null;
+}
+
+// Update the upload date UI row for a given channel
+function updateUploadDateUI(ch,dateStr,src){
+  const prefix=ch==='amazon'?'amz':ch; // amazon uses 'amz' prefix in DOM IDs
+  const wrapId=`${prefix}DateWrap`;
+  const valId=`${prefix}InputDate`;
+  const srcId=`${prefix}InputDateSrc`;
+  const wrap=document.getElementById(wrapId);
+  const val=document.getElementById(valId);
+  const srcEl=document.getElementById(srcId);
+  if(!wrap||!val)return;
+  wrap.style.display='flex';
+  val.textContent=dateStr||'—';
+  val.className=`upload-date-val ${src==='file'?'auto':src==='manual'?'manual':''}`;
+  if(srcEl){
+    srcEl.textContent=src==='file'?'from file':src==='manual'?'manual':'upload date';
+    srcEl.className=`upload-date-src ${src==='file'?'auto':src==='manual'?'manual':'now'}`;
+  }
+}
+
+// Inline editing for upload card data date
+function editUploadDate(ch){
+  const prefix=ch==='amazon'?'amz':ch;
+  const valId=`${prefix}InputDate`;
+  const srcId=`${prefix}InputDateSrc`;
+  const val=document.getElementById(valId);
+  if(!val)return;
+  // Already in edit mode? save it
+  if(val.tagName==='INPUT'){return;}
+  const current=channelDataDates[ch]?.date||new Date().toISOString().split('T')[0];
+  // Parse current display date back to YYYY-MM-DD for the input
+  let isoDate=new Date().toISOString().split('T')[0];
+  try{
+    // Try parsing the displayed date
+    const parsed=new Date(current);
+    if(!isNaN(parsed))isoDate=parsed.toISOString().split('T')[0];
+  }catch(e){}
+  // Replace span with input
+  const inp=document.createElement('input');
+  inp.type='date';inp.value=isoDate;
+  inp.className='upload-date-input';
+  inp.onblur=()=>saveUploadDate(ch,inp.value);
+  inp.onkeydown=ev=>{if(ev.key==='Enter')inp.blur();if(ev.key==='Escape'){inp.value=isoDate;inp.blur();}};
+  val.replaceWith(inp);
+  inp.focus();
+}
+
+function saveUploadDate(ch,isoDate){
+  const prefix=ch==='amazon'?'amz':ch;
+  const valId=`${prefix}InputDate`;
+  const srcId=`${prefix}InputDateSrc`;
+  const d=new Date(isoDate);
+  const formatted=!isoDate||isNaN(d)?channelDataDates[ch]?.date||'—':d.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+  if(isoDate&&!isNaN(d)){
+    channelDataDates[ch]={date:formatted,src:'manual'};
+    channelUploadDates[ch]=formatted;
+  }
+  // Restore span
+  const inp=document.querySelector(`#${prefix}DateWrap input.upload-date-input`);
+  if(inp){
+    const span=document.createElement('span');
+    span.id=valId;
+    span.className=`upload-date-val${channelDataDates[ch]?.src==='file'?' auto':channelDataDates[ch]?.src==='manual'?' manual':''}`;
+    span.textContent=channelDataDates[ch]?.date||'—';
+    span.onclick=()=>editUploadDate(ch);
+    inp.replaceWith(span);
+  }
+  const srcEl=document.getElementById(srcId);
+  if(srcEl){
+    const s=channelDataDates[ch]?.src||'now';
+    srcEl.textContent=s==='file'?'from file':s==='manual'?'manual':'upload date';
+    srcEl.className=`upload-date-src ${s==='file'?'auto':s==='manual'?'manual':'now'}`;
+  }
+  updateDateRows();
+  showToast('Data date updated to '+formatted);
+}
+
+// Inline input date editing in Tab 2 rows
+function inlineEditInputDate(logId,spanEl){
+  const entry=priceLog.find(e=>e.id===logId);if(!entry)return;
+  const current=entry.inputDate||new Date().toISOString().split('T')[0];
+  const inp=document.createElement('input');
+  inp.type='date';inp.value=current;inp.className='input-date-inline';
+  inp.onclick=ev=>ev.stopPropagation();
+  inp.onblur=()=>{
+    const newDate=inp.value;
+    if(newDate){
+      const idx=priceLog.findIndex(e=>e.id===logId);
+      if(idx>=0){priceLog[idx].inputDate=newDate;}
+    }
+    renderTab2();
+    showToast(newDate?'Input date saved':'Input date unchanged');
+  };
+  inp.onkeydown=ev=>{if(ev.key==='Enter')inp.blur();if(ev.key==='Escape'){inp.value=current;inp.blur();}};
+  spanEl.replaceWith(inp);
+  inp.focus();
 }
 function parseAmazonBuybox(wb){
   const ws=wb.Sheets[wb.SheetNames[0]];const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
