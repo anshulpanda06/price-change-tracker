@@ -501,7 +501,7 @@ tr.detail-row td{padding:0;border-bottom:1px solid var(--line);background:var(--
           <tr>
             <th class="sortable" onclick="sortTable('t3','product')">Product</th>
             <th class="sortable" onclick="sortTable('t3','color')">Color</th>
-            <th class="text-right">Approved Price</th>
+            <th class="sortable text-right" onclick="sortTable('t3','price')">Approved Price</th>
             <th class="text-right th-amazon">Amazon</th>
             <th class="text-right th-swiggy">Swiggy</th>
             <th class="text-right th-blinkit">Blinkit</th>
@@ -929,7 +929,7 @@ let activeTab='tab1';
 let editingId=null;
 let deleteTargetId=null;
 let isAdminMode=sessionStorage.getItem('nuukAdminMode')==='1';
-let sortState={t1:{col:'',dir:1},t2:{col:'',dir:1},t3:{col:'',dir:1},t4:{col:'',dir:1},t5:{col:'',dir:1}};
+let sortState={t1:{col:'',dir:1},t2:{col:'',dir:1},t3:{col:'product',dir:1},t4:{col:'product',dir:1},t5:{col:'',dir:1}};
 
 // ── HELPERS ──────────────────────────────────────
 const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -953,7 +953,17 @@ function switchTab(id,btn){
 
 // ── PRODUCT CHIPS ────────────────────────────────
 function buildProductChips(){
-  const products=[...new Set(priceLog.map(e=>e.product))].sort();
+  // Union of every product name actually present across all tabs' data
+  // sources — priceLog/MASTER_SKUS product spellings don't always match the
+  // literal text in uploaded channel sheets (e.g. "STROM" vs "Strom Go"), so
+  // building this from priceLog alone left real products with no chip at
+  // all, and clicking a chip that didn't match a sheet's literal spelling
+  // silently filtered everything out on Tabs 3/4.
+  const set=new Set();
+  priceLog.forEach(e=>{if(e.product)set.add(e.product);});
+  MASTER_SKUS.forEach(s=>{if(s.product)set.add(s.product);});
+  ['amazon','swiggy','blinkit','website'].forEach(ch=>(channelData[ch]||[]).forEach(r=>{if(r.product)set.add(r.product);}));
+  const products=[...set].sort((a,b)=>a.localeCompare(b));
   const all=['',  ...products];
   document.getElementById('productChips').innerHTML=all.map(p=>`<span class="chip${p===activeProduct?' active':''}" onclick="setProductFilter('${esc(p)}',this)">${p||'All'}</span>`).join('');
 }
@@ -1655,6 +1665,11 @@ function renderTab3(){
       if(s.col==='deviation'){
         const va=a.devPct!=null?a.devPct:-Infinity;
         const vb=b.devPct!=null?b.devPct:-Infinity;
+        return(va-vb)*s.dir;
+      }
+      if(s.col==='price'){
+        const va=a.approved!=null?a.approved:-Infinity;
+        const vb=b.approved!=null?b.approved:-Infinity;
         return(va-vb)*s.dir;
       }
       return(a[s.col==='product'?'product':'color']||'').localeCompare(b[s.col==='product'?'product':'color']||'')*s.dir;
