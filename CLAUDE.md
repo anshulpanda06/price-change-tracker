@@ -17,3 +17,4 @@ Anshul wants changes to this repo shipped automatically: after making and verify
 - Use clear commit messages describing the change.
 - Mention in the response that you pushed, so it's not a silent action.
 - This does not extend to force-pushes, history rewrites, or branch deletion — those still require explicit confirmation.
+- Before pushing, add or extend a dated entry in [PROJECT_LOG.md](PROJECT_LOG.md) describing what changed and why, and include it in the same commit. This is what keeps that log "auto-updating" — it's a step in every change, not a separate script.
