@@ -214,20 +214,31 @@ tr.detail-row td{padding:0;border-bottom:1px solid var(--line);background:var(--
 .modal-body{padding:22px;}
 .modal-footer{padding:14px 22px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end;}
 
-/* SOP BANNER */
-.sop-banner{background:var(--paper-2);border:1px solid var(--line);border-radius:8px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:flex-start;gap:14px;}
-.sop-icon{font-size:16px;margin-top:1px;flex-shrink:0;}
-.sop-body{flex:1;}
-.sop-title{font-size:12px;font-weight:600;margin-bottom:3px;}
-.sop-text{font-family:var(--mono);font-size:11px;color:var(--ink-3);line-height:1.7;}
-.sop-email{color:var(--purple);font-weight:500;}
-.cc-field{display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid var(--line-2);}
-.cc-label{font-family:var(--mono);font-size:10px;color:var(--ink-4);font-weight:500;white-space:nowrap;}
-.cc-input{font-family:var(--mono);font-size:12px;flex:1;padding:5px 9px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);outline:none;transition:border-color .13s;}
-.cc-input:focus{border-color:var(--purple);}
-.cc-locked-val{font-family:var(--mono);font-size:12px;color:var(--purple);font-weight:500;}
-.cc-lock-btn{font-size:11px;padding:4px 9px;border:1px solid var(--line);border-radius:5px;background:var(--paper);color:var(--ink-3);cursor:pointer;font-family:var(--sans);font-weight:500;white-space:nowrap;transition:all .13s;}
-.cc-lock-btn:hover{background:var(--purple-bg);color:var(--purple);border-color:var(--purple);}
+/* HINT BANNER */
+.hint-banner{background:var(--paper-2);border:1px solid var(--line);border-radius:8px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:flex-start;gap:14px;}
+.hint-icon{font-size:16px;margin-top:1px;flex-shrink:0;}
+.hint-body{flex:1;}
+.hint-title{font-size:12px;font-weight:600;margin-bottom:3px;}
+.hint-text{font-family:var(--mono);font-size:11px;color:var(--ink-3);line-height:1.7;}
+
+/* PARSE / PASTE UPDATE REVIEW */
+.parse-row{background:var(--paper-2);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:10px;}
+.parse-row.unmatched{border-color:var(--red);background:var(--red-bg);}
+.parse-row-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px;}
+.parse-row-src{font-family:var(--mono);font-size:10px;color:var(--ink-4);flex:1;line-height:1.5;}
+.parse-row-remove{background:none;border:none;color:var(--ink-4);cursor:pointer;font-size:14px;line-height:1;padding:2px 4px;flex-shrink:0;}
+.parse-row-remove:hover{color:var(--red);}
+.parse-row-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px 10px;}
+.parse-row-grid .form-group{margin:0;}
+.parse-row-grid .form-label{font-size:9px;}
+.parse-flag{display:inline-block;font-family:var(--mono);font-size:9px;color:var(--red);background:#fff;border:1px solid var(--red);border-radius:4px;padding:0 4px;margin-left:5px;}
+.parse-temp-row{grid-column:1/-1;display:flex;align-items:center;gap:8px;margin-top:2px;}
+.parse-temp-row label{font-family:var(--mono);font-size:10px;color:var(--ink-3);display:flex;align-items:center;gap:5px;cursor:pointer;}
+.parse-section-toggle{font-family:var(--mono);font-size:11px;color:var(--ink-3);cursor:pointer;font-weight:500;}
+.parse-section-toggle:hover{color:var(--purple);}
+.parse-mentioned-item{font-family:var(--mono);font-size:11px;color:var(--ink-3);display:flex;justify-content:space-between;align-items:center;padding:5px 8px;border-bottom:1px solid var(--line-2);}
+.parse-mentioned-item button{font-size:10px;padding:2px 8px;border:1px solid var(--line);border-radius:4px;background:var(--paper);cursor:pointer;color:var(--ink-3);}
+.parse-mentioned-item button:hover{border-color:var(--purple);color:var(--purple);}
 
 /* SECTION HEADING */
 .section-heading{display:flex;align-items:baseline;gap:9px;margin-bottom:18px;}
@@ -347,6 +358,8 @@ tr.detail-row td{padding:0;border-bottom:1px solid var(--line);background:var(--
   <div class="header-right">
     <div class="sync-status"><span class="sync-dot"></span><span id="lastSync">Live</span></div>
     <button class="btn" onclick="loadChannelDataFromSupabase()" title="Re-fetch latest channel files from cloud" style="font-size:11px;padding:5px 11px;">&#8635; Sync</button>
+    <button class="btn" id="adminBtn" onclick="handleAdminAction()" style="font-size:11px;padding:5px 11px;">🔒 Admin</button>
+    <button class="btn" onclick="openParseModal()">+ Paste update</button>
     <button class="btn btn-primary" onclick="openAddRow()">+ Add entry</button>
   </div>
 </header>
@@ -411,18 +424,12 @@ tr.detail-row td{padding:0;border-bottom:1px solid var(--line);background:var(--
 
   <!-- TAB 2: FULL LOG -->
   <div id="tab2" class="tab-panel">
-    <div class="sop-banner">
-      <div class="sop-icon">📧</div>
-      <div class="sop-body">
-        <div class="sop-title">How price changes are captured</div>
-        <div class="sop-text">
-          Send a structured email to <span class="sop-email">prices@nuuk.in</span> with subject <span class="sop-email">PRICE CHANGE - [Product] - [Color or ALL] - [Channel or ALL]</span>.
-          <span style="cursor:pointer;color:var(--purple);margin-left:6px;" onclick="showEmailTemplate()">View template →</span>
-        </div>
-        <div class="cc-field" id="ccField">
-          <span class="cc-label">CC FOR APPROVALS:</span>
-          <span id="ccDisplay" class="cc-locked-val" style="color:var(--ink-4);">not set</span>
-          <button class="cc-lock-btn" id="ccLockBtn" onclick="handleCCAction()">Set email</button>
+    <div class="hint-banner">
+      <div class="hint-icon">💬</div>
+      <div class="hint-body">
+        <div class="hint-title">How price changes are captured</div>
+        <div class="hint-text">
+          Paste a plain-text update (e.g. from a meeting recap) using <span class="btn" style="display:inline-block;font-size:10px;padding:2px 8px;margin:0 2px;cursor:default;">+ Paste update</span> above — it's parsed into draft log entries you review and confirm before anything is saved. Or use <span class="btn" style="display:inline-block;font-size:10px;padding:2px 8px;margin:0 2px;cursor:default;">+ Add entry</span> for a single change.
         </div>
       </div>
     </div>
@@ -703,7 +710,7 @@ tr.detail-row td{padding:0;border-bottom:1px solid var(--line);background:var(--
         <div class="form-group"><label class="form-label">Change Date *</label><input class="form-input" id="mChangeDate" type="date"></div>
         <div class="form-group"><label class="form-label">Revisit Date</label><input class="form-input" id="mRevisit" type="date"></div>
       </div>
-      <div class="form-group"><label class="form-label">Approved By</label><input class="form-input" id="mApprover" placeholder="Name or email"></div>
+      <div class="form-group"><label class="form-label">Approved By *</label><input class="form-input" id="mApprover" placeholder="Name or email"></div>
       <div class="form-group"><label class="form-label">Reason / Notes</label><textarea class="form-textarea" id="mReason" placeholder="Reason for price change…"></textarea></div>
     </div>
     <div class="modal-footer">
@@ -713,28 +720,45 @@ tr.detail-row td{padding:0;border-bottom:1px solid var(--line);background:var(--
   </div>
 </div>
 
-<!-- EMAIL TEMPLATE MODAL -->
-<div class="modal-overlay" id="emailModal">
-  <div class="modal" style="max-width:560px">
-    <div class="modal-header"><span class="drawer-title">Email SOP Template</span><button class="drawer-close" onclick="closeModal('emailModal')">✕</button></div>
+<!-- PASTE UPDATE / PARSE MODAL -->
+<div class="modal-overlay" id="parseModal">
+  <div class="modal" style="max-width:860px;">
+    <div class="modal-header"><span class="drawer-title">Paste price update</span><button class="drawer-close" onclick="closeParseModal()">✕</button></div>
     <div class="modal-body">
-      <div style="background:var(--paper-2);border:1px solid var(--line);border-radius:8px;padding:14px;font-family:var(--mono);font-size:12px;color:var(--ink-2);line-height:1.9;">
-        <strong style="color:var(--ink-3);font-size:10px;text-transform:uppercase;letter-spacing:.08em;">TO</strong><br>[founder / approver email]<br><br>
-        <strong style="color:var(--ink-3);font-size:10px;text-transform:uppercase;letter-spacing:.08em;">CC</strong><br><span id="emailTemplateCC" style="color:var(--purple);">set CC email above ↑</span><br><br>
-        <strong style="color:var(--ink-3);font-size:10px;text-transform:uppercase;letter-spacing:.08em;">SUBJECT</strong><br>PRICE CHANGE - [PRODUCT] - [COLOR or ALL] - [CHANNEL or ALL]<br><br>
-        <strong style="color:var(--ink-3);font-size:10px;text-transform:uppercase;letter-spacing:.08em;">BODY</strong><br>
-        Product: BFF<br>Color: Tokyo Totti Candy<br>Channel: Amazon<br>Old Price: ₹2,499<br>New Price: ₹2,999<br>Change Date: 20 May 2026<br>Reason: Initial pricing for new SKU launch<br>Revisit Date: 01 Jul 2026 (optional)
+      <div id="parseStepInput">
+        <div class="form-group">
+          <label class="form-label">Paste the update message</label>
+          <textarea class="form-textarea" id="parseInput" style="min-height:240px;font-family:var(--mono);font-size:12px;" placeholder="e.g.&#10;&#10;Lit Pro: Blue 4299, Grey 4199, White 3999&#10;Klip: Buttercup yellow 1399, Sakura Pink 1399; Matcha 1599&#10;Halo Linkd: already increased to 14999&#10;&#10;Every detected price change becomes an editable row you review before anything is saved."></textarea>
+        </div>
       </div>
-      <div style="margin-top:12px;font-family:var(--mono);font-size:11px;color:var(--ink-4);line-height:1.8;">
-        · <strong>TO</strong> is the authorised approver — reply to this email constitutes approval<br>
-        · <strong>CC</strong> is the pricing inbox — must always be CC'd for the log to be captured<br>
-        · Color = ALL creates one log per colour variant of that product<br>
-        · Channel = ALL creates one log per channel (Amazon, Swiggy, Blinkit, Website)
+      <div id="parseStepReview" style="display:none;">
+        <div class="form-group">
+          <label class="form-label">Approved By * <span style="font-size:10px;color:var(--ink-4);font-family:var(--mono);font-weight:400;">· applies to all entries below</span></label>
+          <input class="form-input" id="parseApprover" placeholder="Name or email">
+        </div>
+        <div id="parseSummary" class="hint-text" style="margin-bottom:10px;"></div>
+        <div id="parseRows"></div>
+        <div id="parseMentionedWrap" style="display:none;margin-top:14px;">
+          <div class="parse-section-toggle" onclick="toggleParseSection('parseMentionedList',this)"><span class="parse-toggle-arrow">▸</span> Mentioned, no price change (not added) — <span id="parseMentionedCount"></span></div>
+          <div id="parseMentionedList" style="display:none;margin-top:8px;"></div>
+        </div>
+        <div id="parseIgnoredWrap" style="display:none;margin-top:10px;">
+          <div class="parse-section-toggle" onclick="toggleParseSection('parseIgnoredList',this)"><span class="parse-toggle-arrow">▸</span> Not recognized — <span id="parseIgnoredCount"></span></div>
+          <div id="parseIgnoredList" style="display:none;margin-top:8px;font-family:var(--mono);font-size:11px;color:var(--ink-4);"></div>
+        </div>
       </div>
     </div>
-    <div class="modal-footer"><button class="btn btn-primary" onclick="copyEmailTemplate()">Copy template</button></div>
+    <div class="modal-footer" id="parseFooterInput">
+      <button class="btn" onclick="closeParseModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="runParseMessage()">Parse message</button>
+    </div>
+    <div class="modal-footer" id="parseFooterReview" style="display:none;">
+      <button class="btn" onclick="backToParseInput()">← Back</button>
+      <button class="btn btn-primary" onclick="submitParsedRows()">Add <span id="parseAddCount">0</span> entries</button>
+    </div>
   </div>
 </div>
+
 
 <!-- DELETE CONFIRM MODAL -->
 <div class="modal-overlay" id="deleteModal">
@@ -768,7 +792,6 @@ tr.detail-row td{padding:0;border-bottom:1px solid var(--line);background:var(--
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 // ── CONFIG ──────────────────────────────────────
-const CONFIG={WEB_APP_URL:'YOUR_APPS_SCRIPT_WEBAPP_URL_HERE',SHEET_URL:'YOUR_GOOGLE_SHEET_JSON_URL_HERE'};
 const CHANNELS=['Amazon','Swiggy','Blinkit','Website'];
 
 // ── SUPABASE CONFIG ──────────────────────────────
@@ -816,6 +839,54 @@ async function sbGetFileBytes(storagePath){
   return res.arrayBuffer();
 }
 
+// ── SUPABASE: PRICE LOG ──────────────────────────
+const PL_TABLE='price_log';
+function entryToDbRow(e){
+  return{
+    product:e.product,color:e.color,channel:e.channel,
+    old_price:e.oldPrice,new_price:e.newPrice,change_date:e.changeDate,
+    revisit_date:e.revisit,input_date:e.inputDate,
+    approved_by:e.approvedBy,reason:e.reason,
+    source:e.source||'MANUAL',locked:!!e.locked,
+  };
+}
+function dbRowToEntry(r){
+  return{
+    id:r.id,product:r.product,color:r.color,channel:r.channel,
+    oldPrice:r.old_price,newPrice:r.new_price,changeDate:r.change_date,
+    revisit:r.revisit_date,inputDate:r.input_date,
+    approvedBy:r.approved_by||'',reason:r.reason||'',
+    source:r.source||'MANUAL',ts:r.created_at||new Date().toISOString(),
+    locked:!!r.locked,
+  };
+}
+async function sbFetchPriceLog(){
+  const res=await fetch(`${SB.url}/rest/v1/${PL_TABLE}?select=*&order=id.asc`,{headers:sbH});
+  if(!res.ok)throw new Error('Price log fetch failed: '+await res.text());
+  return res.json();
+}
+async function sbInsertPriceLog(rows){
+  const res=await fetch(`${SB.url}/rest/v1/${PL_TABLE}`,{
+    method:'POST',
+    headers:{...sbH,'Prefer':'return=representation'},
+    body:JSON.stringify(rows),
+  });
+  if(!res.ok)throw new Error('Price log insert failed: '+await res.text());
+  return res.json();
+}
+async function sbUpdatePriceLog(id,patch){
+  const res=await fetch(`${SB.url}/rest/v1/${PL_TABLE}?id=eq.${id}`,{
+    method:'PATCH',headers:sbH,body:JSON.stringify(patch),
+  });
+  if(!res.ok)throw new Error('Price log update failed: '+await res.text());
+}
+async function sbDeletePriceLog(id){
+  const res=await fetch(`${SB.url}/rest/v1/${PL_TABLE}?id=eq.${id}`,{
+    method:'DELETE',headers:sbH,
+  });
+  if(!res.ok)throw new Error('Price log delete failed: '+await res.text());
+}
+
 // ── MASTER SKU DATA (from Master_File_26_V5) ────
 const MASTER_SKUS=[{"product":"BFF","colour":"Matcha Green","sku":"FN281729GMB","asin":"B0F4KR3N7J","swiggyId":"886835","blinkitId":"10238514"},{"product":"BFF","colour":"Black Pink Grey","sku":"FN281729BGB","asin":"B0F4KRVQN4","swiggyId":"994021","blinkitId":""},{"product":"BFF","colour":"Tokyo Totti Candy","sku":"FN281729TTB","asin":"B0F4KS1NWP","swiggyId":"502241","blinkitId":"10221604"},{"product":"BFF","colour":"Lemonade Yellow","sku":"FN281729LYB","asin":"B0F4KSL9TQ","swiggyId":"151296","blinkitId":""},{"product":"BFF","colour":"Icy Metal Grey","sku":"FN281729IMB","asin":"B0F4KVV2NQ","swiggyId":"238673","blinkitId":"10221594"},{"product":"DRIP","colour":"Elderberry Black","sku":"FT211421EBB","asin":"B0DFYTJSDZ","swiggyId":"882936","blinkitId":""},{"product":"DRIP","colour":"Açaí Teal","sku":"FT211421ATB","asin":"B0DFYVRR4N","swiggyId":"","blinkitId":""},{"product":"DRIP","colour":"Nuuk Red","sku":"FT211421RDB","asin":"B0DFYVRGNL","swiggyId":"210447","blinkitId":""},{"product":"DRIP","colour":"Yuzu Yellow","sku":"FT211421YYB","asin":"B0DFYW993N","swiggyId":"385362","blinkitId":""},{"product":"FOLDE v1","colour":"Nordic white","sku":"FN112111WHB","asin":"B0CV5J495D","swiggyId":"","blinkitId":"10161443"},{"product":"FOLDE v1","colour":"Serene Grey","sku":"FN112111GYB","asin":"B0CVRQ96F2","swiggyId":"","blinkitId":"10196052"},{"product":"FOLDE v2","colour":"Serene Grey","sku":"FN111124GYB","asin":"B0DXPY4BH9","swiggyId":"172206","blinkitId":"10238517"},{"product":"FOLDE v2","colour":"Midsommar Rose","sku":"FN111124MRB","asin":"B0DXPYSYRY","swiggyId":"","blinkitId":""},{"product":"FOLDE v2","colour":"Aurora Grey","sku":"FN111124AGB","asin":"B0DXPZLHTJ","swiggyId":"","blinkitId":""},{"product":"FOLDE v2","colour":"Aurora Blue (Mondo Edition)","sku":"FN111124AUB","asin":"B0DXQ12Y35","swiggyId":"","blinkitId":""},{"product":"FOLDE v2","colour":"Arctic Blue","sku":"FN111124ABB","asin":"B0DXQ1Z5T8","swiggyId":"","blinkitId":""},{"product":"FOLDE v2","colour":"Nordic white","sku":"FN111124WHB","asin":"B0DXQ27MY1","swiggyId":"","blinkitId":""},{"product":"HALO v2","colour":"Nordic white","sku":"FN141224WHR","asin":"B0FLDC4XN9","swiggyId":"","blinkitId":""},{"product":"HALO v2","colour":"Midnight Black","sku":"FN141223BKR_FBA","asin":"B0DBJ19FBB","swiggyId":"382343","blinkitId":"10296117"},{"product":"KRUSH","colour":"Nuuk Red","sku":"FT241421RDB","asin":"B0DH54GVPJ","swiggyId":"224957","blinkitId":""},{"product":"KRUSH","colour":"Yuzu Yellow","sku":"FT241421YYB","asin":"B0DH557TT4","swiggyId":"558528","blinkitId":""},{"product":"KRUSH","colour":"Elderberry Black","sku":"FT241421EBB","asin":"B0DH55T54K","swiggyId":"","blinkitId":"10196678"},{"product":"KRUSH","colour":"Açaí Teal","sku":"FT241421ATB","asin":"B0DH56RBQR","swiggyId":"","blinkitId":"10171927"},{"product":"KRUSH 2 JAR","colour":"Yuzu Yellow","sku":"FT241421YYB_2","asin":"B0FNX2GJ3X","swiggyId":"","blinkitId":""},{"product":"KRUSH 2 JAR","colour":"Nuuk Red","sku":"FT241422RDB_2","asin":"B0FNX2M7CJ","swiggyId":"","blinkitId":""},{"product":"KRUSH 2 JAR","colour":"Elderberry Black","sku":"FT241422EBB_2","asin":"B0FPD2WQNG","swiggyId":"","blinkitId":""},{"product":"KRUSH 2 JAR","colour":"Açaí Teal","sku":"FT241422ATB","asin":"B0FPCZWS76","swiggyId":"","blinkitId":""},{"product":"LIT v1","colour":"Nordic white","sku":"FN112212WHR","asin":"B0CV5MMKV1","swiggyId":"","blinkitId":"10161444"},{"product":"LIT v1","colour":"Serene Grey","sku":"FN112212GYR","asin":"B0CVRJC4WW","swiggyId":"","blinkitId":"10196095"},{"product":"LIT v2","colour":"Matcha Green","sku":"FN121123MGR","asin":"B0DWMZSNDX","swiggyId":"","blinkitId":"10238516"},{"product":"LIT v2","colour":"Midsommar Rose","sku":"FN121123MPR","asin":"B0DWMZP6CG","swiggyId":"","blinkitId":""},{"product":"LIT v2","colour":"Nordic White","sku":"FN121123WHR","asin":"B0DWMXYZVC","swiggyId":"","blinkitId":""},{"product":"LIT v2","colour":"Serene Grey","sku":"FN121123GYR","asin":"B0DWN11193","swiggyId":"638763","blinkitId":"10238519"},{"product":"REN BEAM","colour":"Meteor Grey","sku":"VC181221MGB","asin":"B0DH82R1T7","swiggyId":"865009","blinkitId":""},{"product":"REN Go","colour":"Midnight Black","sku":"VC161151BKB","asin":"B0D1K91D1Z","swiggyId":"990260","blinkitId":"10161434"},{"product":"REN Go","colour":"Tundra Green","sku":"VC161151TGB","asin":"B0DH4L39SC","swiggyId":"","blinkitId":""},{"product":"Ren Pro","colour":"Meteor Grey","sku":"VC271527MGB","asin":"B0FGXRQFWD","swiggyId":"","blinkitId":""},{"product":"RĪZZ","colour":"Vogue Blue","sku":"GC251121VBB","asin":"B0DQL6WN4P","swiggyId":"","blinkitId":""},{"product":"RĪZZ","colour":"Couture Grey","sku":"GC251121CGB","asin":"B0DQL65R7J","swiggyId":"391044","blinkitId":"10268642"},{"product":"RĪZZ","colour":"Nuuk Red","sku":"GC251121RDB","asin":"B0DQL6YPZ4","swiggyId":"569198","blinkitId":"10269159"},{"product":"RĪZZ","colour":"Haute Matcha","sku":"GC251121HMB","asin":"B0DQL5YNWQ","swiggyId":"","blinkitId":""},{"product":"RĪZZ","colour":"Chic Rose","sku":"GC251121CRB","asin":"B0DQL52MRL","swiggyId":"","blinkitId":""},{"product":"STROM","colour":"Serene Grey","sku":"GS151121GYB","asin":"B0D4JYJYP6","swiggyId":"","blinkitId":"10238520"},{"product":"STROM","colour":"Nuuk Red","sku":"GS151121RDB","asin":"B0D4JXQGD7","swiggyId":"727998","blinkitId":""},{"product":"STROM","colour":"Nordic white","sku":"GS151121WHB","asin":"B0D47HBRXR","swiggyId":"","blinkitId":""},{"product":"Hot Blox","colour":"Midnight Black","sku":"HT361136MBS","asin":"B0FW5B57X5","swiggyId":"","blinkitId":"10266278"},{"product":"Hot Blox","colour":"Serene Grey","sku":"HT361136GYS","asin":"B0FW57H2V3","swiggyId":"","blinkitId":"10272029"},{"product":"Hot Bar","colour":"Blue","sku":"HT412739BLB","asin":"B0FXN6G8R4","swiggyId":"","blinkitId":""},{"product":"Hot Bar","colour":"Nuuk Red","sku":"HT412739RDB","asin":"B0FXN6XW6T","swiggyId":"323523","blinkitId":"10272031"},{"product":"Hot Bar","colour":"Grey","sku":"HT412739GYB","asin":"B0FXN7FQR5","swiggyId":"323523","blinkitId":"10272000"},{"product":"Brisk","colour":"Serene Grey","sku":"FT391237GYB","asin":"B0FXLKZ9ZH","swiggyId":"805739","blinkitId":"10272068"},{"product":"Brisk","colour":"Nuuk Red","sku":"FT391237RDB","asin":"B0FXLLB21N","swiggyId":"885860","blinkitId":"10289174"},{"product":"Brisk","colour":"Sesame Grey","sku":"FT391237SGB","asin":"B0FXLKG1XR","swiggyId":"","blinkitId":"10272030"},{"product":"Strom GO V2","colour":"Serene Grey","sku":"GS151122GYB","asin":"B0FV34C51P","swiggyId":"183180","blinkitId":""},{"product":"Strom GO V2","colour":"Nuuk Red","sku":"GS151122RDB","asin":"B0FV2WG2T2","swiggyId":"826724","blinkitId":"10166089"},{"product":"Strom GO V2","colour":"Santorini Blue","sku":"GS151122SBB","asin":"B0FVG2JPKR","swiggyId":"","blinkitId":""},{"product":"Strom GO V2","colour":"Capetown coral","sku":"GS151122CCB","asin":"B0FVG4DTPP","swiggyId":"","blinkitId":""},{"product":"Strom GO V2","colour":"Kyoto Matcha Green","sku":"GS151122MGB","asin":"B0FVG2V2JG","swiggyId":"","blinkitId":""},{"product":"Lit v3","colour":"Midsommar Rose","sku":"FN121126MPR","asin":"B0GNMLQ2KF","swiggyId":"","blinkitId":""},{"product":"Lit v3","colour":"Matcha Green","sku":"FN121126MGR","asin":"B0GNMLJ2KN","swiggyId":"","blinkitId":""},{"product":"Lit v3","colour":"Nordic White","sku":"FN121126WHR","asin":"B0GNMLGJVZ","swiggyId":"","blinkitId":""},{"product":"Lit v3","colour":"Serene Grey","sku":"FN121126GYR","asin":"B0GNMPM4VK","swiggyId":"","blinkitId":""},{"product":"Klip","colour":"Sakura Pink","sku":"FN281125SPB","asin":"B0GNMX3346","swiggyId":"","blinkitId":""},{"product":"Klip","colour":"Buttercup Yellow","sku":"FN281125BYB","asin":"B0GNN2NFHJ","swiggyId":"","blinkitId":""},{"product":"Klip","colour":"Matcha Green","sku":"FN281125MGB","asin":"B0GNMPKDTK","swiggyId":"452217","blinkitId":""},{"product":"Klip","colour":"Serene Grey","sku":"FN281125GYB","asin":"B0GNN1K4Q7","swiggyId":"","blinkitId":"10296121"},{"product":"Ren Pro + Wet Mop","colour":"Meteor Grey","sku":"VC271522MGB","asin":"B0GFMW5YXL","swiggyId":"","blinkitId":""},{"product":"Lit Pro","colour":"Dusk Blue","sku":"FN121427DBR","asin":"B0GP6KH5W9","swiggyId":"","blinkitId":""},{"product":"Lit Pro","colour":"Nordic white","sku":"FN121427WHR","asin":"B0GP679RWJ","swiggyId":"","blinkitId":""},{"product":"Lit Pro","colour":"Serene Grey","sku":"FN121427GYR","asin":"B0GP6SRNQV","swiggyId":"","blinkitId":""},{"product":"Halo linked","colour":"Nordic white","sku":"FN141224WHS","asin":"B0GP6W79KC","swiggyId":"","blinkitId":""},{"product":"Halo linked","colour":"Serene Grey","sku":"FN141224BKS","asin":"B0GP67F314","swiggyId":"","blinkitId":""}];
 
@@ -846,8 +917,7 @@ const SEED_LOG_RAW=[
   {product:'DRIP',color:'Elderberry Black',channel:'Amazon',oldPrice:11499,newPrice:10999,changeDate:'2026-05-07',approvedBy:'',reason:'May ART: price reduced to increase DRR vs Red.',revisit:null,source:'MANUAL',ts:'2026-05-07T09:02:00'},
 ];
 
-let priceLog=SEED_LOG_RAW.map((r,i)=>({...r,id:i+1,inputDate:r.ts?r.ts.split('T')[0]:r.changeDate}));
-let nextLogId=priceLog.length+1;
+let priceLog=[];
 
 // Amazon buybox data
 const AMAZON_DATA=[{"product":"Brisk","color":"Sesame Grey","asin":"B0FXLKG1XR","mrp":12499,"price":8999,"availability":"Avail","channel":"Amazon","category":"air fryers"},{"product":"Hot Bar","color":"Blue","asin":"B0FXN6G8R4","mrp":8999,"price":6499,"availability":"Avail","channel":"Amazon","category":"room heaters"},{"product":"Brisk","color":"Nuuk Red","asin":"B0FXLLB21N","mrp":12499,"price":8999,"availability":"Avail","channel":"Amazon","category":"air fryers"},{"product":"HALO v2","color":"Nordic white","asin":"B0FLDC4XN9","mrp":15999,"price":10999,"availability":"Avail","channel":"Amazon","category":"tower fans"},{"product":"Brisk","color":"Serene Grey","asin":"B0FXLKZ9ZH","mrp":12499,"price":8999,"availability":"Avail","channel":"Amazon","category":"air fryers"},{"product":"LIT v2","color":"Serene Grey","asin":"B0DWN11193","mrp":3899,"price":2899,"availability":"Avail","channel":"Amazon","category":"table fans"},{"product":"FOLDE v2","color":"Aurora Blue (Mondo Edition)","asin":"B0DXQ12Y35","mrp":3499,"price":2799,"availability":"Avail","channel":"Amazon","category":"personal fans"},{"product":"KRUSH","color":"Açaí Teal","asin":"B0DH56RBQR","mrp":5299,"price":3399,"availability":"Avail","channel":"Amazon","category":"mixer grinder blender"},{"product":"RĪZZ","color":"Chic Rose","asin":"B0DQL52MRL","mrp":2099,"price":999,"availability":"Avail","channel":"Amazon","category":"lint remover"},{"product":"BFF","color":"Matcha Green","asin":"B0F4KR3N7J","mrp":null,"price":null,"availability":"Unavail","channel":"Amazon","category":"mini fans"},{"product":"BFF","color":"Black Pink Grey","asin":"B0F4KRVQN4","mrp":null,"price":null,"availability":"Unavail","channel":"Amazon","category":"mini fans"},{"product":"BFF","color":"Lemonade Yellow","asin":"B0F4KSL9TQ","mrp":null,"price":null,"availability":"Unavail","channel":"Amazon","category":"mini fans"},{"product":"BFF","color":"Tokyo Totti Candy","asin":"B0F4KS1NWP","mrp":2700,"price":2299,"availability":"Avail","channel":"Amazon","category":"mini fans"},{"product":"Ren Pro","color":"Meteor Grey","asin":"B0FGXRQFWD","mrp":25999,"price":19999,"availability":"Avail","channel":"Amazon","category":"vacuum cleaner"},{"product":"BFF","color":"Icy Metal Grey","asin":"B0F4KVV2NQ","mrp":2700,"price":2299,"availability":"Avail","channel":"Amazon","category":"mini fans"},{"product":"KRUSH 2 JAR","color":"Nuuk Red","asin":"B0FNX2M7CJ","mrp":5299,"price":3999,"availability":"Avail","channel":"Amazon","category":"juicer mixer grinders"},{"product":"FOLDE v2","color":"Midsommar Rose","asin":"B0DXPYSYRY","mrp":3499,"price":2799,"availability":"Avail","channel":"Amazon","category":"personal fans"},{"product":"FOLDE v2","color":"Serene Grey","asin":"B0DXPY4BH9","mrp":3499,"price":2799,"availability":"Avail","channel":"Amazon","category":"personal fans"},{"product":"RĪZZ","color":"Nuuk Red","asin":"B0DQL6YPZ4","mrp":2099,"price":999,"availability":"Avail","channel":"Amazon","category":"lint remover"},{"product":"RĪZZ","color":"Vogue Blue","asin":"B0DQL6WN4P","mrp":2099,"price":999,"availability":"Avail","channel":"Amazon","category":"lint remover"},{"product":"RĪZZ","color":"Haute Matcha","asin":"B0DQL5YNWQ","mrp":2099,"price":999,"availability":"Avail","channel":"Amazon","category":"lint remover"},{"product":"LIT v2","color":"Nordic White","asin":"B0DWMXYZVC","mrp":3899,"price":2899,"availability":"Avail","channel":"Amazon","category":"table fans"},{"product":"LIT v2","color":"Matcha Green","asin":"B0DWMZSNDX","mrp":3899,"price":2899,"availability":"Avail","channel":"Amazon","category":"table fans"},{"product":"KRUSH 2 JAR","color":"Yuzu Yellow","asin":"B0FNX2GJ3X","mrp":5299,"price":3999,"availability":"Avail","channel":"Amazon","category":"juicer mixer grinders"},{"product":"Hot Blox","color":"Serene Grey","asin":"B0FW57H2V3","mrp":null,"price":null,"availability":"Unavail","channel":"Amazon","category":"room heaters"},{"product":"REN BEAM","color":"Meteor Grey","asin":"B0DH82R1T7","mrp":10999,"price":7999,"availability":"Avail","channel":"Amazon","category":"vacuum cleaner"},{"product":"LIT v2","color":"Midsommar Rose","asin":"B0DWMZP6CG","mrp":3889,"price":2899,"availability":"Avail","channel":"Amazon","category":"table fans"},{"product":"RĪZZ","color":"Couture Grey","asin":"B0DQL65R7J","mrp":null,"price":null,"availability":"Unavail","channel":"Amazon","category":"lint remover"},{"product":"FOLDE v2","color":"Aurora Grey","asin":"B0DXPZLHTJ","mrp":3499,"price":2799,"availability":"Avail","channel":"Amazon","category":"personal fans"},{"product":"FOLDE v2","color":"Arctic Blue","asin":"B0DXQ1Z5T8","mrp":3499,"price":2507,"availability":"Avail","channel":"Amazon","category":"personal fans"},{"product":"FOLDE v2","color":"Nordic white","asin":"B0DXQ27MY1","mrp":3499,"price":2799,"availability":"Avail","channel":"Amazon","category":"personal fans"},{"product":"STROM","color":"Serene Grey","asin":"B0D4JYJYP6","mrp":null,"price":null,"availability":"Unavail","channel":"Amazon","category":"garment steamer"},{"product":"STROM","color":"Nuuk Red","asin":"B0D4JXQGD7","mrp":4499,"price":2599,"availability":"Avail","channel":"Amazon","category":"garment steamer"},{"product":"LIT v1","color":"Serene Grey","asin":"B0CVRJC4WW","mrp":null,"price":null,"availability":"Unavail","channel":"Amazon","category":"table fans"},{"product":"STROM","color":"Nordic white","asin":"B0D47HBRXR","mrp":null,"price":null,"availability":"Unavail","channel":"Amazon","category":"garment steamer"},{"product":"DRIP","color":"Elderberry Black","asin":"B0DFYTJSDZ","mrp":28147,"price":12499,"availability":"Avail","channel":"Amazon","category":"juicers"},{"product":"REN Go","color":"Midnight Black","asin":"B0D1K91D1Z","mrp":5699,"price":3496,"availability":"Avail","channel":"Amazon","category":"handheld vacuums"},{"product":"FOLDE v1","color":"Nordic white","asin":"B0CV5J495D","mrp":null,"price":null,"availability":"Unavail","channel":"Amazon","category":"personal fans"},{"product":"FOLDE v1","color":"Serene Grey","asin":"B0CVRQ96F2","mrp":null,"price":3249,"availability":"Avail","channel":"Amazon","category":"personal fans"},{"product":"REN Go","color":"Tundra Green","asin":"B0DH4L39SC","mrp":5699,"price":3496,"availability":"Avail","channel":"Amazon","category":"handheld vacuums"},{"product":"DRIP","color":"Nuuk Red","asin":"B0DFYVRGNL","mrp":28149,"price":12499,"availability":"Avail","channel":"Amazon","category":"juicers"},{"product":"DRIP","color":"Açaí Teal","asin":"B0DFYVRR4N","mrp":28149,"price":12499,"availability":"Avail","channel":"Amazon","category":"juicers"},{"product":"DRIP","color":"Yuzu Yellow","asin":"B0DFYW993N","mrp":28149,"price":12499,"availability":"Avail","channel":"Amazon","category":"juicers"},{"product":"LIT v1","color":"Nordic white","asin":"B0CV5MMKV1","mrp":null,"price":null,"availability":"Unavail","channel":"Amazon","category":"table fans"},{"product":"KRUSH","color":"Nuuk Red","asin":"B0DH54GVPJ","mrp":null,"price":null,"availability":"Unavail","channel":"Amazon","category":"mixer grinder blender"},{"product":"KRUSH","color":"Yuzu Yellow","asin":"B0DH557TT4","mrp":5299,"price":3299,"availability":"Avail","channel":"Amazon","category":"mixer grinder blender"},{"product":"Hot Bar","color":"Grey","asin":"B0FXN7FQR5","mrp":8999,"price":6499,"availability":"Avail","channel":"Amazon","category":"room heaters"},{"product":"KRUSH","color":"Elderberry Black","asin":"B0DH55T54K","mrp":null,"price":null,"availability":"Unavail","channel":"Amazon","category":"mixer grinder blender"}];
@@ -858,7 +928,7 @@ let activeProduct='';
 let activeTab='tab1';
 let editingId=null;
 let deleteTargetId=null;
-let ccEmail='';let ccLocked=false;
+let isAdminMode=sessionStorage.getItem('nuukAdminMode')==='1';
 let sortState={t1:{col:'',dir:1},t2:{col:'',dir:1},t3:{col:'',dir:1},t4:{col:'',dir:1},t5:{col:'',dir:1}};
 
 // ── HELPERS ──────────────────────────────────────
@@ -914,30 +984,344 @@ function updateColorDropdown(){
   autoFetchOldPrice();
 }
 
+// Look up the most recent log entry for a product+colour+channel combination.
+// Shared by the single Add-entry modal and the paste-update review rows.
+function computeOldPrice(product,color,channel){
+  if(!product||!color||color==='__ALL__')return{price:null,hint:''};
+  const channels=channel==='All'?CHANNELS:[channel];
+  let latestPrice=null,latestDate='';
+  for(const ch of channels){
+    const e=getLatestPerChannel(product,color,ch);
+    if(e&&(!latestDate||e.changeDate>latestDate)){latestPrice=e.newPrice;latestDate=e.changeDate;}
+  }
+  return latestPrice!=null?{price:latestPrice,hint:`from log ${fmtDate(latestDate)}`}:{price:null,hint:'no prior entry — new SKU'};
+}
 // Auto-fetch old price from the latest log entry for selected product+color+channel
 function autoFetchOldPrice(){
   const product=document.getElementById('mProduct').value;
   const colorSel=document.getElementById('mColor').value;
   const channel=document.getElementById('mChannel').value;
   const hint=document.getElementById('mOldPriceHint');
-  if(!product||!colorSel||colorSel==='__ALL__'){
-    document.getElementById('mOldPrice').value='';
-    if(hint)hint.textContent='';
-    return;
+  const r=computeOldPrice(product,colorSel,channel);
+  document.getElementById('mOldPrice').value=r.price!=null?r.price:'';
+  if(hint)hint.textContent=r.hint?`· ${r.hint}`:'';
+}
+
+// ── MESSAGE PARSER ────────────────────────────────
+// Turns a pasted free-text update into draft log rows. Nothing here writes
+// to priceLog directly — parseMessage() only produces suggestions that the
+// review UI (openParseModal / renderParseReview) lets the owner edit before
+// commitLogEntry() is called per confirmed row.
+function normalizeStr(s){
+  return(s||'').toString().normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+}
+function tightStr(s){return normalizeStr(s).replace(/\s+/g,'');}
+function levenshtein(a,b){
+  const m=a.length,n=b.length;
+  if(m===0)return n;if(n===0)return m;
+  const dp=new Array(n+1);
+  for(let j=0;j<=n;j++)dp[j]=j;
+  for(let i=1;i<=m;i++){
+    let prev=dp[0];dp[0]=i;
+    for(let j=1;j<=n;j++){
+      const tmp=dp[j];
+      dp[j]=a[i-1]===b[j-1]?prev:1+Math.min(prev,dp[j],dp[j-1]);
+      prev=tmp;
+    }
   }
-  // Look for most recent log entry for this SKU+channel combination
-  const channels=channel==='All'?CHANNELS:[channel];
-  let latestPrice=null,latestDate='';
-  for(const ch of channels){
-    const e=getLatestPerChannel(product,colorSel,ch);
-    if(e&&(!latestDate||e.changeDate>latestDate)){latestPrice=e.newPrice;latestDate=e.changeDate;}
+  return dp[n];
+}
+function strSimilarity(rawA,rawB){
+  const a=tightStr(rawA),b=tightStr(rawB);
+  if(!a||!b)return 0;
+  if(a===b)return 1;
+  // Containment score scaled by how close the lengths are — a query fully
+  // contained in a candidate that's only slightly longer beats one buried in
+  // a much longer (or much shorter) candidate name.
+  let containScore=0;
+  if(a.includes(b)||b.includes(a)){
+    const shorter=Math.min(a.length,b.length),longer=Math.max(a.length,b.length);
+    containScore=0.7+0.25*(shorter/longer);
   }
-  if(latestPrice!=null){
-    document.getElementById('mOldPrice').value=latestPrice;
-    if(hint)hint.textContent=`· from log ${fmtDate(latestDate)}`;
-  }else{
-    document.getElementById('mOldPrice').value='';
-    if(hint)hint.textContent='· no prior entry';
+  // Token recall/precision — rewards candidates that cover every word of the
+  // query (e.g. "Strom Go" should prefer "Strom GO V2" over bare "STROM").
+  const tokensA=normalizeStr(rawA).split(' ').filter(Boolean);
+  const tokensB=normalizeStr(rawB).split(' ').filter(Boolean);
+  const matched=tokensA.filter(t=>tokensB.some(tb=>tb===t||tb.includes(t)||t.includes(tb))).length;
+  const recall=tokensA.length?matched/tokensA.length:0;
+  const precision=tokensB.length?matched/tokensB.length:0;
+  const tokenScore=(recall&&precision)?(recall+precision)/2:0;
+  const dist=levenshtein(a,b);
+  const levScore=Math.max(0,1-dist/Math.max(a.length,b.length));
+  return Math.max(containScore,tokenScore,levScore*0.95);
+}
+function matchProduct(raw){
+  if(!raw)return null;
+  let best=null,bestScore=0;
+  for(const p of getMasterProducts()){
+    const score=strSimilarity(raw,p);
+    if(score>bestScore){bestScore=score;best=p;}
+  }
+  return bestScore>=0.55?{name:best,score:bestScore}:null;
+}
+function matchColor(raw,product){
+  if(!raw)return null;
+  const colours=product?getColoursForProduct(product):[...new Set(MASTER_SKUS.map(s=>s.colour))];
+  let best=null,bestScore=0;
+  for(const c of colours){
+    const score=strSimilarity(raw,c);
+    if(score>bestScore){bestScore=score;best=c;}
+  }
+  return bestScore>=0.5?{name:best,score:bestScore}:null;
+}
+function hasPriceDigits(s){return/\d{2,}/.test(s);}
+function extractTrailingPrice(s){
+  const m=s.trim().match(/^(.*?)\s*[₹]?\s*([\d][\d,]*)\s*$/);
+  if(!m)return null;
+  const label=m[1].trim();
+  const price=Number(m[2].replace(/,/g,''));
+  if(!price||!label)return null;
+  return{label,price};
+}
+const ALREADY_CHANGE_RE=/^(.*?)\s*:?\s*(?:already\s+)?(?:increased|decreased|raised|dropped|changed|updated|moved)\s*(?:to)?\s*[₹]?\s*([\d][\d,]*)/i;
+function tryAlreadyChangedLine(line){
+  const m=line.match(ALREADY_CHANGE_RE);
+  if(!m)return null;
+  const productRaw=m[1].trim();
+  const price=Number(m[2].replace(/,/g,''));
+  if(!productRaw||!price)return null;
+  return{productRaw,price};
+}
+function tryPricedListLine(line){
+  const colonIdx=line.indexOf(':');
+  if(colonIdx<0)return null;
+  const productRaw=line.slice(0,colonIdx).trim();
+  const rest=line.slice(colonIdx+1).trim();
+  if(!productRaw||!rest)return null;
+  const items=rest.split(/[,;]/).map(s=>s.trim()).filter(Boolean);
+  const priced=[],unpriced=[];
+  for(const item of items){
+    const ex=extractTrailingPrice(item);
+    if(ex)priced.push({colorRaw:ex.label,price:ex.price});
+    else unpriced.push(item);
+  }
+  if(priced.length===0)return null;
+  return{productRaw,priced,unpriced};
+}
+function tryParenMention(line){
+  if(hasPriceDigits(line))return null;
+  const m=line.match(/^(.+?)\s*\(([^)]+)\)\s*$/);
+  if(!m)return null;
+  return{productRaw:m[1].trim(),colorsRaw:m[2].split(',').map(s=>s.trim()).filter(Boolean)};
+}
+function parseMessage(text){
+  const lines=(text||'').split('\n').map(l=>l.trim()).filter(Boolean);
+  const toAdd=[],mentioned=[],ignored=[];
+  for(const raw of lines){
+    const line=raw.replace(/^(?:\d+[.)]|[-•*])\s+/,'').trim();
+    if(!line){continue;}
+
+    const already=tryAlreadyChangedLine(line);
+    if(already){
+      const pm=matchProduct(already.productRaw);
+      toAdd.push({productRaw:already.productRaw,colorRaw:'',product:pm?pm.name:'',color:pm?'__ALL__':'',channel:'All',newPrice:already.price,sourceLine:raw});
+      continue;
+    }
+
+    const priced=tryPricedListLine(line);
+    if(priced){
+      const pm=matchProduct(priced.productRaw);
+      for(const it of priced.priced){
+        const cm=pm?matchColor(it.colorRaw,pm.name):null;
+        toAdd.push({productRaw:priced.productRaw,colorRaw:it.colorRaw,product:pm?pm.name:'',color:cm?cm.name:'',channel:'All',newPrice:it.price,sourceLine:raw});
+      }
+      for(const un of priced.unpriced){
+        mentioned.push({productRaw:priced.productRaw,colorRaw:un,note:'no price change mentioned',sourceLine:raw});
+      }
+      continue;
+    }
+
+    const paren=tryParenMention(line);
+    if(paren){
+      const pm=matchProduct(paren.productRaw);
+      for(const cRaw of paren.colorsRaw){
+        mentioned.push({productRaw:paren.productRaw,colorRaw:cRaw,note:'no price change mentioned',sourceLine:raw});
+      }
+      continue;
+    }
+
+    if(!hasPriceDigits(line)){
+      const pm=matchProduct(line);
+      if(pm&&pm.score>=0.6){
+        mentioned.push({productRaw:line,colorRaw:'',note:'no price change mentioned',sourceLine:raw});
+        continue;
+      }
+    }
+
+    ignored.push(raw);
+  }
+  return{toAdd,mentioned,ignored};
+}
+
+// ── PASTE UPDATE MODAL ────────────────────────────
+let parseDraftRows=[],parseMentionedItems=[],parseIgnoredLines=[],parseRowIdSeq=1;
+
+function openParseModal(){
+  document.getElementById('parseInput').value='';
+  document.getElementById('parseApprover').value='';
+  parseDraftRows=[];parseMentionedItems=[];parseIgnoredLines=[];
+  document.getElementById('parseStepInput').style.display='';
+  document.getElementById('parseStepReview').style.display='none';
+  document.getElementById('parseFooterInput').style.display='';
+  document.getElementById('parseFooterReview').style.display='none';
+  document.getElementById('parseModal').classList.add('open');
+}
+function closeParseModal(){document.getElementById('parseModal').classList.remove('open');}
+function backToParseInput(){
+  document.getElementById('parseStepInput').style.display='';
+  document.getElementById('parseStepReview').style.display='none';
+  document.getElementById('parseFooterInput').style.display='';
+  document.getElementById('parseFooterReview').style.display='none';
+}
+function toggleParseSection(id,headerEl){
+  const box=document.getElementById(id);
+  const isOpen=box.style.display!=='none';
+  box.style.display=isOpen?'none':'';
+  const arrow=headerEl.querySelector('.parse-toggle-arrow');
+  if(arrow)arrow.textContent=isOpen?'▸':'▾';
+}
+
+function makeParseRow(partial){
+  const today=new Date().toISOString().split('T')[0];
+  const row={
+    id:parseRowIdSeq++,
+    product:partial.product||'',
+    color:partial.color||'',
+    channel:'All',
+    oldPrice:null,
+    newPrice:partial.newPrice!=null?partial.newPrice:null,
+    changeDate:today,
+    temporary:false,
+    endDate:'',
+    reason:partial.sourceLine||'',
+    sourceLine:partial.sourceLine||'',
+  };
+  row.oldPrice=computeOldPrice(row.product,row.color,row.channel).price;
+  return row;
+}
+
+function runParseMessage(){
+  const text=document.getElementById('parseInput').value;
+  if(!text.trim()){showToast('Paste a message first');return;}
+  const result=parseMessage(text);
+  parseDraftRows=result.toAdd.map(item=>makeParseRow(item));
+  parseMentionedItems=result.mentioned;
+  parseIgnoredLines=result.ignored;
+  document.getElementById('parseStepInput').style.display='none';
+  document.getElementById('parseStepReview').style.display='';
+  document.getElementById('parseFooterInput').style.display='none';
+  document.getElementById('parseFooterReview').style.display='';
+  if(parseDraftRows.length===0)showToast('No priced changes detected — check the message, or add rows manually below');
+  renderParseReviewBody();
+}
+
+function renderParseReviewBody(){
+  renderParseRows();
+  renderParseMentioned();
+  renderParseIgnored();
+  document.getElementById('parseSummary').textContent=
+    `Found ${parseDraftRows.length} price change${parseDraftRows.length===1?'':'s'} · ${parseMentionedItems.length} mentioned without a price change · ${parseIgnoredLines.length} line${parseIgnoredLines.length===1?'':'s'} not recognized`;
+  document.getElementById('parseAddCount').textContent=parseDraftRows.length;
+}
+
+function findParseRow(id){return parseDraftRows.find(r=>r.id===id);}
+function onParseRowProductChange(id,val){const r=findParseRow(id);if(!r)return;r.product=val;r.color='';r.oldPrice=computeOldPrice(r.product,r.color,r.channel).price;renderParseRows();}
+function onParseRowColorChange(id,val){const r=findParseRow(id);if(!r)return;r.color=val;r.oldPrice=computeOldPrice(r.product,r.color,r.channel).price;renderParseRows();}
+function onParseRowChannelChange(id,val){const r=findParseRow(id);if(!r)return;r.channel=val;r.oldPrice=computeOldPrice(r.product,r.color,r.channel).price;renderParseRows();}
+function onParseRowTemp(id,checked){const r=findParseRow(id);if(!r)return;r.temporary=checked;renderParseRows();}
+function onParseRowField(id,field,val){const r=findParseRow(id);if(!r)return;r[field]=val;}
+function removeParseRow(id){parseDraftRows=parseDraftRows.filter(r=>r.id!==id);renderParseReviewBody();}
+function promoteMentioned(i){
+  const m=parseMentionedItems[i];if(!m)return;
+  const pm=matchProduct(m.productRaw);
+  const cm=(pm&&m.colorRaw)?matchColor(m.colorRaw,pm.name):null;
+  parseDraftRows.push(makeParseRow({product:pm?pm.name:'',color:cm?cm.name:(pm?'__ALL__':''),newPrice:null,sourceLine:m.sourceLine}));
+  parseMentionedItems=parseMentionedItems.filter((_,idx)=>idx!==i);
+  renderParseReviewBody();
+}
+
+function renderParseRows(){
+  document.getElementById('parseRows').innerHTML=parseDraftRows.map(renderParseRowHtml).join('')
+    ||'<div class="hint-text">No draft rows — use "+ Add as row" below or go back and adjust the message.</div>';
+  document.getElementById('parseAddCount').textContent=parseDraftRows.length;
+}
+function renderParseRowHtml(r){
+  const unmatched=!r.product||!r.color;
+  const prodOpts='<option value="">— select —</option>'+getMasterProducts().map(p=>`<option${p===r.product?' selected':''}>${esc(p)}</option>`).join('');
+  const colorOpts=r.product
+    ?('<option value="">— select —</option><option value="__ALL__"'+(r.color==='__ALL__'?' selected':'')+'>All colours</option>'+getColoursForProduct(r.product).map(c=>`<option${c===r.color?' selected':''}>${esc(c)}</option>`).join(''))
+    :'<option value="">— select product first —</option>';
+  const channelOpts=['All','Amazon','Swiggy','Blinkit','Website'].map(c=>`<option${c===r.channel?' selected':''}>${c}</option>`).join('');
+  return`<div class="parse-row${unmatched?' unmatched':''}">
+    <div class="parse-row-top">
+      <div class="parse-row-src">${esc(r.sourceLine||'')}${unmatched?'<span class="parse-flag">needs review</span>':''}</div>
+      <button class="parse-row-remove" onclick="removeParseRow(${r.id})" title="Remove row">✕</button>
+    </div>
+    <div class="parse-row-grid">
+      <div class="form-group"><label class="form-label">Product</label><select class="form-select" onchange="onParseRowProductChange(${r.id},this.value)">${prodOpts}</select></div>
+      <div class="form-group"><label class="form-label">Color</label><select class="form-select" onchange="onParseRowColorChange(${r.id},this.value)">${colorOpts}</select></div>
+      <div class="form-group"><label class="form-label">Channel</label><select class="form-select" onchange="onParseRowChannelChange(${r.id},this.value)">${channelOpts}</select></div>
+      <div class="form-group"><label class="form-label">Change date</label><input class="form-input" type="date" value="${r.changeDate||''}" onchange="onParseRowField(${r.id},'changeDate',this.value)"></div>
+      <div class="form-group"><label class="form-label">Old price (₹)${r.oldPrice==null?' <span class="parse-flag">new SKU</span>':''}</label><input class="form-input" type="number" value="${r.oldPrice!=null?r.oldPrice:''}" onchange="onParseRowField(${r.id},'oldPrice',Number(this.value)||null)"></div>
+      <div class="form-group"><label class="form-label">New price (₹) *</label><input class="form-input" type="number" value="${r.newPrice!=null?r.newPrice:''}" onchange="onParseRowField(${r.id},'newPrice',Number(this.value)||null)"></div>
+      <div class="form-group" style="grid-column:span 2;"><label class="form-label">Reason / notes</label><input class="form-input" value="${esc(r.reason||'')}" onchange="onParseRowField(${r.id},'reason',this.value)"></div>
+      <div class="parse-temp-row">
+        <label><input type="checkbox" ${r.temporary?'checked':''} onchange="onParseRowTemp(${r.id},this.checked)"> Temporary / sale price (reverts after end date)</label>
+        ${r.temporary?`<input class="form-input" type="date" style="width:150px;" value="${r.endDate||''}" onchange="onParseRowField(${r.id},'endDate',this.value)">`:''}
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderParseMentioned(){
+  const wrap=document.getElementById('parseMentionedWrap');
+  if(!parseMentionedItems.length){wrap.style.display='none';return;}
+  wrap.style.display='';
+  document.getElementById('parseMentionedCount').textContent=parseMentionedItems.length;
+  document.getElementById('parseMentionedList').innerHTML=parseMentionedItems.map((m,i)=>
+    `<div class="parse-mentioned-item"><span>${esc(m.productRaw)}${m.colorRaw?' — '+esc(m.colorRaw):''} <span style="color:var(--ink-4);">— "${esc(m.sourceLine)}"</span></span><button onclick="promoteMentioned(${i})">+ Add as row</button></div>`
+  ).join('');
+}
+function renderParseIgnored(){
+  const wrap=document.getElementById('parseIgnoredWrap');
+  if(!parseIgnoredLines.length){wrap.style.display='none';return;}
+  wrap.style.display='';
+  document.getElementById('parseIgnoredCount').textContent=parseIgnoredLines.length;
+  document.getElementById('parseIgnoredList').innerHTML=parseIgnoredLines.map(l=>`<div>${esc(l)}</div>`).join('');
+}
+
+async function submitParsedRows(){
+  const approvedBy=document.getElementById('parseApprover').value.trim();
+  if(!approvedBy){showToast('Approved By is required');return;}
+  if(parseDraftRows.length===0){showToast('No entries to add');return;}
+  const invalid=parseDraftRows.find(r=>!r.product||!r.color||!r.newPrice||!r.changeDate);
+  if(invalid){showToast('Every row needs Product, Color, New Price and Change Date filled in');return;}
+  let total=0;
+  try{
+    for(const r of parseDraftRows){
+      total+=await commitLogEntry({
+        product:r.product,colorSel:r.color,channelSel:r.channel,
+        oldPrice:r.oldPrice,newPrice:r.newPrice,changeDate:r.changeDate,
+        revisit:r.temporary?(r.endDate||null):null,
+        approvedBy,reason:r.reason,
+        source:'PARSED',
+      });
+    }
+    closeParseModal();applyFilters();
+    showToast(`${total} log ${total===1?'entry':'entries'} added`);
+  }catch(e){
+    applyFilters();
+    showToast('Some entries may not have saved — '+e.message);
   }
 }
 
@@ -1146,12 +1530,41 @@ function renderTab1(){
   document.getElementById('t1Body').innerHTML=html||`<tr><td colspan="10" style="text-align:center;padding:48px;color:var(--ink-4);font-family:var(--mono);font-size:12px;">No entries yet — add a price change to get started</td></tr>`;
 }
 
+// ── ADMIN MODE ────────────────────────────────────
+const ADMIN_PASSWORD='admin123';
+function handleAdminAction(){
+  if(isAdminMode){
+    isAdminMode=false;
+    sessionStorage.removeItem('nuukAdminMode');
+    updateAdminBtn();renderTab2();
+    showToast('Admin mode off');
+    return;
+  }
+  const pw=window.prompt('Admin password:');
+  if(pw===null)return;
+  if(pw!==ADMIN_PASSWORD){showToast('Incorrect password');return;}
+  isAdminMode=true;
+  sessionStorage.setItem('nuukAdminMode','1');
+  updateAdminBtn();renderTab2();
+  showToast('Admin mode on — you can now edit or delete any log entry');
+}
+function updateAdminBtn(){
+  const btn=document.getElementById('adminBtn');
+  if(!btn)return;
+  btn.textContent=isAdminMode?'🔓 Admin':'🔒 Admin';
+  btn.style.background=isAdminMode?'var(--purple-bg)':'';
+  btn.style.color=isAdminMode?'var(--purple)':'';
+  btn.style.borderColor=isAdminMode?'var(--purple)':'';
+}
+
 // ── TAB 2 ────────────────────────────────────────
 function toggleLock(id){
+  if(!isAdminMode)return;
   const idx=priceLog.findIndex(e=>e.id===id);if(idx<0)return;
   priceLog[idx].locked=!priceLog[idx].locked;
   renderTab2();
   showToast(priceLog[idx].locked?'Entry locked':'Entry unlocked');
+  sbUpdatePriceLog(id,{locked:priceLog[idx].locked}).catch(e=>console.warn('Supabase lock update failed:',e.message));
 }
 
 function renderTab2(){
@@ -1171,7 +1584,7 @@ function renderTab2(){
   document.getElementById('t2Body').innerHTML=rows.map(r=>{
     const pChanged=r.oldPrice&&r.newPrice!==r.oldPrice;
     const up=r.newPrice>(r.oldPrice||0);
-    const srcClass=r.source==='CHAT'?'badge-blue':r.source==='EMAIL'?'badge-green':'badge-gray';
+    const srcClass=r.source==='CHAT'?'badge-blue':r.source==='PARSED'?'badge-green':'badge-gray';
     const cls=chClass(r.channel);
     const hasR=r.revisit&&new Date(r.revisit)>new Date(Date.now()-86400000*7);
     const isLocked=r.locked||false;
@@ -1185,16 +1598,16 @@ function renderTab2(){
       <td class="text-right"><span style="font-family:var(--mono);font-size:12px;color:var(--ink-3);">${r.oldPrice?fmt(r.oldPrice):'—'}</span></td>
       <td class="text-right"><span style="font-family:var(--mono);font-size:13px;font-weight:500;">${fmt(r.newPrice)}</span>${pChanged?`<span style="font-family:var(--mono);font-size:9px;margin-left:3px;color:${up?'var(--red)':'var(--green)'};">${up?'▲':'▼'}</span>`:''}</td>
       <td class="date-cell">${fmtDate(r.changeDate)}</td>
-      <td class="input-date-cell">${isLocked?inputDateDisplay:`<span class="input-date-edit" onclick="inlineEditInputDate(${r.id},this)" title="Click to edit input date">${inputDateDisplay}${r.inputDate?'':' <span style=\'font-size:9px;color:var(--ink-4);\'>add</span>'}</span>`}</td>
+      <td class="input-date-cell">${isAdminMode?`<span class="input-date-edit" onclick="inlineEditInputDate(${r.id},this)" title="Click to edit input date">${inputDateDisplay}${r.inputDate?'':' <span style=\'font-size:9px;color:var(--ink-4);\'>add</span>'}</span>`:inputDateDisplay}</td>
       <td style="font-size:13px;font-weight:600;color:var(--ink-2);">${esc(r.approvedBy)||'<span style="color:var(--ink-4);font-weight:400;">—</span>'}</td>
       <td class="reason-cell">${esc(r.reason)}</td>
       <td class="date-cell">${r.revisit?`<span style="color:var(--red);">${fmtDate(r.revisit)}</span>`:'<span style="color:var(--ink-4);">—</span>'}</td>
       <td><span class="badge ${srcClass}">${esc(r.source||'MANUAL')}</span></td>
       <td>
         <div class="row-actions">
-          <button class="lock-btn${isLocked?' locked':''}" onclick="toggleLock(${r.id})" title="${isLocked?'Unlock':'Lock'} entry">${lockIcon}</button>
-          ${isLocked?'':`<button class="edit-btn" onclick="openDrawer(${r.id})">Edit</button>`}
-          ${isLocked?'':`<button class="del-btn" onclick="openDeleteConfirm(${r.id})">Del</button>`}
+          ${isAdminMode?`<button class="lock-btn${isLocked?' locked':''}" onclick="toggleLock(${r.id})" title="${isLocked?'Unlock':'Lock'} entry">${lockIcon}</button>`:`<span style="font-size:11px;opacity:.5;" title="${isLocked?'Locked':'Unlock admin mode to edit'}">${lockIcon}</span>`}
+          ${isAdminMode&&!isLocked?`<button class="edit-btn" onclick="openDrawer(${r.id})">Edit</button>`:''}
+          ${isAdminMode&&!isLocked?`<button class="del-btn" onclick="openDeleteConfirm(${r.id})">Del</button>`:''}
         </div>
       </td>
     </tr>`;
@@ -1324,6 +1737,7 @@ function toggleDetail(id,btn){const row=document.getElementById(id);if(!row)retu
 
 // ── DRAWER ───────────────────────────────────────
 function openDrawer(id){
+  if(!isAdminMode)return;
   const e=priceLog.find(e=>e.id===id);if(!e)return;editingId=id;
   document.getElementById('dProduct').value=e.product;
   document.getElementById('dColor').value=e.color;
@@ -1354,21 +1768,45 @@ function saveDrawer(){
     approvedBy:document.getElementById('dApprover').value.trim(),
     reason:document.getElementById('dReason').value.trim(),
   };
-  closeDrawer();applyFilters();showToast('Entry updated');pushToSheet('editEntry',priceLog[idx]);
+  closeDrawer();applyFilters();showToast('Entry updated');
+  sbUpdatePriceLog(priceLog[idx].id,entryToDbRow(priceLog[idx])).catch(e=>console.warn('Supabase update failed:',e.message));
 }
 
 // ── DELETE ───────────────────────────────────────
 function openDeleteConfirm(id){
+  if(!isAdminMode)return;
   const e=priceLog.find(e=>e.id===id);if(!e)return;
   deleteTargetId=id;
   document.getElementById('deleteConfirmText').textContent=`Delete log entry for ${e.product} – ${e.color} (${e.channel}) on ${fmtDate(e.changeDate)}? This cannot be undone.`;
   document.getElementById('deleteModal').classList.add('open');
 }
-function confirmDelete(){
+async function confirmDelete(){
   if(!deleteTargetId)return;
-  priceLog=priceLog.filter(e=>e.id!==deleteTargetId);
+  const id=deleteTargetId;
+  priceLog=priceLog.filter(e=>e.id!==id);
   deleteTargetId=null;
   closeModal('deleteModal');applyFilters();showToast('Entry deleted');
+  try{await sbDeletePriceLog(id);}catch(e){console.warn('Supabase delete failed:',e.message);}
+}
+
+// ── SHARED: EXPAND + PERSIST A LOG ROW ───────────
+// Expands "All" channel / "__ALL__" colour into one row per combination,
+// inserts into Supabase, and appends the DB-backed rows to priceLog.
+// Used by both the single Add-entry modal and the paste-update parser review.
+async function commitLogEntry({product,colorSel,channelSel,oldPrice,newPrice,changeDate,revisit,approvedBy,reason,source}){
+  const channels=channelSel==='All'?CHANNELS:[channelSel];
+  const colors=colorSel==='__ALL__'?getColoursForProduct(product):[colorSel];
+  const inputDate=new Date().toISOString().split('T')[0];
+  const rows=[];
+  for(const color of colors){
+    for(const ch of channels){
+      rows.push(entryToDbRow({product,color,channel:ch,oldPrice,newPrice,changeDate,revisit:revisit||null,inputDate,approvedBy,reason,source:source||'MANUAL',locked:false}));
+    }
+  }
+  const inserted=await sbInsertPriceLog(rows);
+  const entries=inserted.map(dbRowToEntry);
+  priceLog.push(...entries);
+  return entries.length;
 }
 
 // ── ADD MODAL ────────────────────────────────────
@@ -1384,71 +1822,32 @@ function openAddRow(){
   document.getElementById('addModal').classList.add('open');
 }
 function closeModal(id){document.getElementById(id).classList.remove('open');}
-function submitAddRow(){
+async function submitAddRow(){
   const product=document.getElementById('mProduct').value.trim();
   const colorSel=document.getElementById('mColor').value.trim();
   const newPrice=Number(document.getElementById('mNewPrice').value);
   const changeDate=document.getElementById('mChangeDate').value;
+  const approvedBy=document.getElementById('mApprover').value.trim();
   if(!product||!colorSel||!newPrice||!changeDate){showToast('Fill required fields: Product, Color, New Price, Change Date');return;}
+  if(!approvedBy){showToast('Approved By is required');return;}
   const channelSel=document.getElementById('mChannel').value;
-  const channels=channelSel==='All'?CHANNELS:[channelSel];
-  // Expand All colours → every colour of this product
-  const colors=colorSel==='__ALL__'?getColoursForProduct(product):[colorSel];
-  let count=0;
-  const inputDate=new Date().toISOString().split('T')[0]; // auto-capture today as input date
-  for(const color of colors){
-    for(const ch of channels){
-      priceLog.push({
-        id:nextLogId++,product,color,channel:ch,
-        oldPrice:Number(document.getElementById('mOldPrice').value)||null,
-        newPrice,changeDate,
-        revisit:document.getElementById('mRevisit').value||null,
-        approvedBy:document.getElementById('mApprover').value.trim(),
-        reason:document.getElementById('mReason').value.trim(),
-        source:'MANUAL',ts:new Date().toISOString(),
-        inputDate,
-        locked:false,
-      });
-      count++;
-    }
+  try{
+    const count=await commitLogEntry({
+      product,colorSel,channelSel,
+      oldPrice:Number(document.getElementById('mOldPrice').value)||null,
+      newPrice,changeDate,
+      revisit:document.getElementById('mRevisit').value||null,
+      approvedBy,
+      reason:document.getElementById('mReason').value.trim(),
+      source:'MANUAL',
+    });
+    closeModal('addModal');applyFilters();
+    showToast(`${count} log ${count===1?'entry':'entries'} added`);
+  }catch(e){
+    showToast('Could not save entry — '+e.message);
   }
-  closeModal('addModal');applyFilters();
-  showToast(`${count} log ${count===1?'entry':'entries'} added`);
-  pushToSheet('addEntry',{product,color:colorSel,channel:channelSel,newPrice,changeDate});
 }
 
-// ── CC EMAIL ─────────────────────────────────────
-function handleCCAction(){
-  if(ccLocked){const pw=window.prompt('Admin password to unlock:');if(pw==='nuuk2026'){ccLocked=false;renderCCField();}return;}
-  const cur=document.getElementById('ccDisplay');
-  if(cur.tagName==='INPUT'){
-    const val=cur.value.trim();
-    if(val&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)){showToast('Enter a valid email');return;}
-    ccEmail=val;ccLocked=!!val;renderCCField();if(val)showToast('CC email saved');
-  }else{renderCCField(true);}
-}
-function renderCCField(editing=false){
-  const display=document.getElementById('ccDisplay');
-  const btn=document.getElementById('ccLockBtn');
-  const tpl=document.getElementById('emailTemplateCC');
-  if(ccLocked){
-    display.outerHTML=`<span id="ccDisplay" class="cc-locked-val">${esc(ccEmail)}</span>`;
-    btn.textContent='🔒 Locked';
-    if(tpl)tpl.textContent=ccEmail;
-  }else if(editing){
-    display.outerHTML=`<input id="ccDisplay" class="cc-input" type="email" placeholder="approvals@nuuk.in" value="${esc(ccEmail)}">`;
-    btn.textContent='Save & lock';
-  }else{
-    display.outerHTML=`<span id="ccDisplay" class="cc-locked-val" style="color:var(--ink-4);">${ccEmail||'not set'}</span>`;
-    btn.textContent='Set email';
-    if(tpl&&ccEmail)tpl.textContent=ccEmail;
-  }
-}
-function showEmailTemplate(){document.getElementById('emailModal').classList.add('open');}
-function copyEmailTemplate(){
-  const cc=ccEmail||'[pricing inbox email]';
-  navigator.clipboard.writeText(`TO: [founder / approver email]\nCC: ${cc}\nSUBJECT: PRICE CHANGE - [PRODUCT] - [COLOR or ALL] - [CHANNEL or ALL]\n\nProduct: BFF\nColor: Tokyo Totti Candy\nChannel: Amazon\nOld Price: ₹2,499\nNew Price: ₹2,999\nChange Date: 20 May 2026\nReason: Initial pricing for new SKU launch\nRevisit Date: 01 Jul 2026 (optional)`).then(()=>showToast('Template copied'));
-}
 
 // ── CHART ────────────────────────────────────────
 const CHANNEL_COLORS={Amazon:'#f59e0b',Swiggy:'#ef4444',Blinkit:'#22c55e'};
@@ -1690,7 +2089,10 @@ function inlineEditInputDate(logId,spanEl){
     const newDate=inp.value;
     if(newDate){
       const idx=priceLog.findIndex(e=>e.id===logId);
-      if(idx>=0){priceLog[idx].inputDate=newDate;}
+      if(idx>=0){
+        priceLog[idx].inputDate=newDate;
+        sbUpdatePriceLog(logId,{input_date:newDate}).catch(e=>console.warn('Supabase update failed:',e.message));
+      }
     }
     renderTab2();
     showToast(newDate?'Input date saved':'Input date unchanged');
@@ -1722,10 +2124,6 @@ function parseGenericChannel(wb,channel){
 function dragOver(e,z){e.preventDefault();document.getElementById(z).classList.add('drag');}
 function dragLeave(z){document.getElementById(z).classList.remove('drag');}
 function dropFile(e,fid,z,ch){e.preventDefault();dragLeave(z);const f=e.dataTransfer.files;if(f.length){const inp=document.getElementById(fid);const dt=new DataTransfer();dt.items.add(f[0]);inp.files=dt.files;inp.dispatchEvent(new Event('change'));}}
-
-// ── SHEETS ───────────────────────────────────────
-async function pushToSheet(action,data){if(!CONFIG.WEB_APP_URL||CONFIG.WEB_APP_URL.includes('YOUR_'))return;try{await fetch(CONFIG.WEB_APP_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,data})});}catch(e){}}
-async function fetchFromSheet(){if(!CONFIG.SHEET_URL||CONFIG.SHEET_URL.includes('YOUR_'))return;try{const res=await fetch(CONFIG.SHEET_URL);const json=await res.json();const rows=json.feed?.entry||[];const fetched=rows.map((e,i)=>{const c=k=>e['gsx$'+k]?.$t||'';return{id:i+1,product:c('product'),color:c('color'),channel:c('channel'),oldPrice:Number(c('oldprice'))||null,newPrice:Number(c('newprice'))||null,changeDate:c('changedate'),approvedBy:c('approvedby'),reason:c('reason'),revisit:c('revisitdate')||null,source:c('source')||'MANUAL',ts:c('timestamp')||new Date().toISOString()};}).filter(r=>r.product);if(fetched.length){priceLog=fetched;nextLogId=Math.max(...fetched.map(r=>r.id))+1;applyFilters();}}catch(e){}}
 
 // ── SUPABASE: LOAD CHANNEL DATA ON PAGE OPEN ──────
 // On every page load, fetch the latest uploaded file per channel from Supabase,
@@ -1769,12 +2167,31 @@ async function loadChannelDataFromSupabase(){
   }
 }
 
+// ── PRICE LOG BOOTSTRAP ───────────────────────────
+async function bootstrapPriceLog(){
+  try{
+    let rows=await sbFetchPriceLog();
+    if(rows.length===0){
+      // First run against a freshly-created table — seed it once from the built-in history.
+      const seedRows=SEED_LOG_RAW.map(r=>entryToDbRow({...r,inputDate:r.ts?r.ts.split('T')[0]:r.changeDate}));
+      await sbInsertPriceLog(seedRows);
+      rows=await sbFetchPriceLog();
+    }
+    priceLog=rows.map(dbRowToEntry);
+  }catch(e){
+    console.warn('Supabase price_log unavailable, falling back to local seed data (read-only until the table is set up):',e.message);
+    priceLog=SEED_LOG_RAW.map((r,i)=>({...r,id:i+1,inputDate:r.ts?r.ts.split('T')[0]:r.changeDate}));
+    showToast('Could not reach the shared log — showing local data only');
+  }
+  applyFilters();
+}
+
 // ── INIT ─────────────────────────────────────────
 document.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('lastSync').textContent=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short'});
   populateProductDropdown();
-  applyFilters();
-  fetchFromSheet();
+  updateAdminBtn();
+  bootstrapPriceLog();
   loadChannelDataFromSupabase();
 });
 </script>
