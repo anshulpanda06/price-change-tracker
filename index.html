@@ -292,7 +292,9 @@ tr.detail-row td{padding:0;border-bottom:1px solid var(--line);background:var(--
 /* CHART MODAL */
 .chart-modal{width:680px;max-width:96vw;}
 .chart-modal-header{padding:18px 22px 14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;}
-.chart-modal-body{padding:22px;}
+.chart-modal-body{padding:22px;position:relative;}
+.chart-tooltip{position:fixed;display:none;pointer-events:none;transform:translate(-50%,-100%) translateY(-8px);background:#1a1a2e;color:#fff;font-family:var(--mono);font-size:11px;line-height:1.6;padding:6px 10px;border-radius:6px;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.2);z-index:9999;}
+.chart-tooltip strong{font-size:12px;}
 .chart-title{font-size:14px;font-weight:600;}
 .chart-subtitle{font-family:var(--mono);font-size:11px;color:var(--ink-3);margin-top:2px;}
 .chart-legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;}
@@ -407,6 +409,7 @@ tr.detail-row td{padding:0;border-bottom:1px solid var(--line);background:var(--
     </div>
     <div class="trend-body">
       <canvas id="t1TrendCanvas"></canvas>
+      <div class="chart-tooltip" id="t1TrendTooltip"></div>
     </div>
     <div class="chart-legend" id="t1TrendLegend" style="margin-top:4px;"></div>
   </div>
@@ -851,6 +854,7 @@ tr.detail-row td{padding:0;border-bottom:1px solid var(--line);background:var(--
     </div>
     <div class="chart-modal-body">
       <canvas id="chartCanvas" height="300"></canvas>
+      <div class="chart-tooltip" id="chartTooltip"></div>
       <div class="chart-legend" id="chartLegend"></div>
     </div>
   </div>
@@ -2024,6 +2028,39 @@ async function submitAddRow(){
 
 // ── CHART ────────────────────────────────────────
 const CHANNEL_COLORS={Amazon:'#f59e0b',Swiggy:'#ef4444',Blinkit:'#22c55e',Website:'#6c5ce7'};
+// Per-canvas list of {x,y,price,date,channel,color} for the plotted dots,
+// rebuilt on every drawChart() call — lets hover tooltips find the nearest
+// actual log entry without re-deriving it from scratch on every mousemove.
+const chartPoints={};
+function findNearestChartPoint(canvasId,mx,my,radius=12){
+  const pts=chartPoints[canvasId];
+  if(!pts||!pts.length)return null;
+  let best=null,bestDist=radius;
+  for(const p of pts){
+    const d=Math.hypot(p.x-mx,p.y-my);
+    if(d<=bestDist){bestDist=d;best=p;}
+  }
+  return best;
+}
+function attachChartHover(canvasId,tooltipId){
+  const canvas=document.getElementById(canvasId);
+  const tooltip=document.getElementById(tooltipId);
+  if(!canvas||!tooltip)return;
+  canvas.addEventListener('mousemove',e=>{
+    const rect=canvas.getBoundingClientRect();
+    const mx=e.clientX-rect.left,my=e.clientY-rect.top;
+    const pt=findNearestChartPoint(canvasId,mx,my);
+    if(!pt){tooltip.style.display='none';return;}
+    tooltip.innerHTML=`<strong>₹${Math.round(pt.price).toLocaleString('en-IN')}</strong><br>${esc(pt.channel)} · changed ${pt.date.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}`;
+    // Fixed positioning anchored to the point's on-screen location (not the
+    // canvas's own coordinate space) so it's never clipped by a scrollable/
+    // overflow:hidden ancestor like the compact trend card.
+    tooltip.style.left=(rect.left+pt.x)+'px';
+    tooltip.style.top=(rect.top+pt.y)+'px';
+    tooltip.style.display='block';
+  });
+  canvas.addEventListener('mouseleave',()=>{tooltip.style.display='none';});
+}
 function openChart(product,color,channel=''){
   document.getElementById('chartTitle').textContent=`${product} — ${color}${channel?' · '+channel:''}`;
   document.getElementById('chartSubtitle').textContent=channel?`Price history for ${channel}`:'Price history across all channels from full log';
@@ -2039,6 +2076,7 @@ function drawChart(product,color,filterChannel='',canvasId='chartCanvas',legendI
   const W=canvas.offsetWidth||620,H=heightOverride||300;
   canvas.width=W*2;canvas.height=H*2;canvas.style.width=W+'px';canvas.style.height=H+'px';
   ctx.scale(2,2);
+  chartPoints[canvasId]=[];
   const seriesData={};
   const channelsToShow=filterChannel?[filterChannel]:CHANNELS;
   for(const ch of channelsToShow){
@@ -2083,7 +2121,13 @@ function drawChart(product,color,filterChannel='',canvasId='chartCanvas',legendI
     });
     ctx.lineTo(xScale(extended[extended.length-1].date),pad.t+cH);ctx.closePath();ctx.fill();
     const r=heightOverride?3:4;
-    pts.forEach(p=>{const x=xScale(p.date),y=yScale(p.price);ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();ctx.fillStyle='#1a1a2e';ctx.font='9px DM Mono,monospace';ctx.textAlign='center';ctx.fillText(p.date.toLocaleDateString('en-IN',{day:'2-digit',month:'short'}),x,H-pad.b+13);});
+    pts.forEach(p=>{
+      const x=xScale(p.date),y=yScale(p.price);
+      ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();
+      ctx.fillStyle='#1a1a2e';ctx.font='9px DM Mono,monospace';ctx.textAlign='center';
+      ctx.fillText(p.date.toLocaleDateString('en-IN',{day:'2-digit',month:'short'}),x,H-pad.b+13);
+      chartPoints[canvasId].push({x,y,price:p.price,date:p.date,channel:ch,color});
+    });
   }
   // Label "today" at the right edge when the flat line actually extends past
   // the last logged change, so it's clear the price is still current.
@@ -2465,6 +2509,8 @@ document.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('lastSync').textContent=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short'});
   populateProductDropdown();
   updateAdminBtn();
+  attachChartHover('chartCanvas','chartTooltip');
+  attachChartHover('t1TrendCanvas','t1TrendTooltip');
   bootstrapPriceLog();
   loadChannelDataFromSupabase();
 });
