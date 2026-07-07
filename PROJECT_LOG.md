@@ -58,6 +58,9 @@ The flat "still at this price" segment after a SKU's last logged change was draw
 Neither chart (per-row modal or the inline trend chart) showed the exact price at a point — you had to eyeball it against the y-axis gridlines. Added hover tooltips to both: `drawChart()` now records each plotted dot's on-screen position alongside its price/date/channel in a `chartPoints` map keyed by canvas id, and a shared `attachChartHover()` (wired up once at page load) finds the nearest recorded point to the cursor and shows "₹4,399 / Website · changed 20 May 2026" — the exact price and the date it changed to that price, not the date hovered.
 - Tooltip uses `position:fixed` anchored to the point's actual screen coordinates (not `position:absolute` inside the chart container) — the compact trend card has `overflow:hidden` for its own layout reasons, which was clipping an absolutely-positioned tooltip; fixed positioning sidesteps that entirely.
 
+### 2026-07-07 (later still) — Onboarding hint on Latest Changes
+Full Log already had a short banner explaining the two ways to log a price change, but Latest Changes — the tab a brand-new user actually lands on — had none. Added a matching 2-line hint banner there: paste a message into "+ Paste update" for parsing, or use "+ Add entry" for a single manual change.
+
 ## Keeping this log current
 
 Whenever a change is made to this project, add a dated entry above (or extend the latest one if it's the same work session) describing what changed and why — not just what, since "why" is what stops future work from re-litigating settled decisions. This is a manual step performed as part of each change, not an automated script — summarizing a diff meaningfully requires understanding the change, which is why this file gets updated at the same time the code does rather than by a hook.
