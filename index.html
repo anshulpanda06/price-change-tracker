@@ -2061,10 +2061,23 @@ function drawChart(product,color,filterChannel='',canvasId='chartCanvas',legendI
     const pts=seriesData[ch];const color=CHANNEL_COLORS[ch]||'#6c5ce7';
     const today=new Date();const extended=[...pts];
     if(pts.length>0&&today>pts[pts.length-1].date)extended.push({...pts[pts.length-1],date:today});
-    ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=2;ctx.lineJoin='round';
-    extended.forEach((p,i)=>{i===0?ctx.moveTo(xScale(p.date),yScale(p.price)):ctx.lineTo(xScale(p.date),yScale(p.price));});ctx.stroke();
-    ctx.beginPath();ctx.fillStyle=color+'22';ctx.moveTo(xScale(extended[0].date),pad.t+cH);
-    extended.forEach(p=>ctx.lineTo(xScale(p.date),yScale(p.price)));
+    // Step-after path: price is flat until the day it actually changes, then
+    // jumps vertically — no diagonal interpolation between log entries.
+    ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=2;ctx.lineJoin='miter';
+    extended.forEach((p,i)=>{
+      const x=xScale(p.date),y=yScale(p.price);
+      if(i===0)ctx.moveTo(x,y);
+      else{ctx.lineTo(x,yScale(extended[i-1].price));ctx.lineTo(x,y);}
+    });
+    ctx.stroke();
+    ctx.beginPath();ctx.fillStyle=color+'22';
+    ctx.moveTo(xScale(extended[0].date),pad.t+cH);
+    ctx.lineTo(xScale(extended[0].date),yScale(extended[0].price));
+    extended.forEach((p,i)=>{
+      if(i===0)return;
+      const x=xScale(p.date),y=yScale(p.price);
+      ctx.lineTo(x,yScale(extended[i-1].price));ctx.lineTo(x,y);
+    });
     ctx.lineTo(xScale(extended[extended.length-1].date),pad.t+cH);ctx.closePath();ctx.fill();
     const r=heightOverride?3:4;
     pts.forEach(p=>{const x=xScale(p.date),y=yScale(p.price);ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();ctx.fillStyle='#1a1a2e';ctx.font='9px DM Mono,monospace';ctx.textAlign='center';ctx.fillText(p.date.toLocaleDateString('en-IN',{day:'2-digit',month:'short'}),x,H-pad.b+13);});

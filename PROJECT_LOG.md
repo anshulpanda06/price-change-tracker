@@ -48,6 +48,9 @@ The two secondary stat cards on Latest Changes ("Price Increases", "Price Reduct
 - **Active SKUs** card stays but shrunk to a small fixed-width card next to the chart instead of a full-width stat card — removed the now-dead `.stats-row`/`.stat-card` CSS along with it.
 - Hit a flexbox sizing bug during this — `flex:1` + `height:150px` on a child with no bounded ancestor height caused the whole row to balloon to ~800px tall. Fixed by giving `.trend-row` an explicit `height:200px` so descendants have something concrete to size against.
 
+### 2026-07-07 (later) — Step-line rendering for price charts
+Both the per-row chart modal and the new inline trend chart were drawing diagonal lines between price-change points, implying a gradual ramp between log entries — misleading, since a price is flat until the exact day it changes, then jumps. Changed `drawChart()`'s stroke and fill paths to a step-after shape (flat horizontal segments, sharp vertical jumps only on actual change dates), matching the reference step-chart style Anshul shared. Applies to both chart surfaces since they share the same renderer.
+
 ## Keeping this log current
 
 Whenever a change is made to this project, add a dated entry above (or extend the latest one if it's the same work session) describing what changed and why — not just what, since "why" is what stops future work from re-litigating settled decisions. This is a manual step performed as part of each change, not an automated script — summarizing a diff meaningfully requires understanding the change, which is why this file gets updated at the same time the code does rather than by a hook.
