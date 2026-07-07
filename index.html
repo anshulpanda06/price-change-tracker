@@ -357,7 +357,7 @@ tr.detail-row td{padding:0;border-bottom:1px solid var(--line);background:var(--
   <div class="logo">NUUK <span class="logo-pill">PRICING</span></div>
   <div class="header-right">
     <div class="sync-status"><span class="sync-dot"></span><span id="lastSync">Live</span></div>
-    <button class="btn" onclick="loadChannelDataFromSupabase()" title="Re-fetch latest channel files from cloud" style="font-size:11px;padding:5px 11px;">&#8635; Sync</button>
+    <button class="btn" onclick="loadChannelDataFromSupabase()" title="Re-fetch the latest price log and channel files from the cloud" style="font-size:11px;padding:5px 11px;">&#8635; Sync</button>
     <button class="btn" id="adminBtn" onclick="handleAdminAction()" style="font-size:11px;padding:5px 11px;">🔒 Admin</button>
     <button class="btn" onclick="openParseModal()">+ Paste update</button>
     <button class="btn btn-primary" onclick="openAddRow()">+ Add entry</button>
@@ -413,7 +413,7 @@ tr.detail-row td{padding:0;border-bottom:1px solid var(--line);background:var(--
           <th class="text-right th-swiggy">Swiggy</th>
           <th class="text-right th-blinkit">Blinkit</th>
           <th class="text-right th-website">Website</th>
-          <th class="sortable text-right" onclick="sortTable('t1','date')">Last Changed</th>
+          <th class="sortable" onclick="sortTable('t1','date')">Last Changed</th>
           <th>Approved By</th>
           <th style="width:60px"></th>
         </tr></thead>
@@ -656,6 +656,12 @@ tr.detail-row td{padding:0;border-bottom:1px solid var(--line);background:var(--
     <div class="form-group"><label class="form-label">Channel</label>
       <select class="form-select" id="dChannel"><option>Amazon</option><option>Swiggy</option><option>Blinkit</option><option>Website</option></select>
     </div>
+    <div class="form-group" id="dBatchWrap" style="display:none;background:var(--purple-bg);border-radius:8px;padding:10px 12px;">
+      <label style="display:flex;align-items:flex-start;gap:8px;font-family:var(--mono);font-size:11px;color:var(--purple);cursor:pointer;line-height:1.5;">
+        <input type="checkbox" id="dApplyBatch" checked style="margin-top:2px;">
+        <span id="dBatchLabel"></span>
+      </label>
+    </div>
     <div class="form-section">Price details</div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Old Price (₹)</label><input class="form-input" id="dOldPrice" type="number"></div>
@@ -759,6 +765,32 @@ tr.detail-row td{padding:0;border-bottom:1px solid var(--line);background:var(--
   </div>
 </div>
 
+<!-- SKU EDIT MODAL (admin, from Latest Changes) -->
+<div class="modal-overlay" id="skuEditModal">
+  <div class="modal">
+    <div class="modal-header"><span class="drawer-title">Edit SKU</span><button class="drawer-close" onclick="closeModal('skuEditModal')">✕</button></div>
+    <div class="modal-body">
+      <div class="hint-text" style="margin-bottom:12px;">Renaming Product/Color relabels every log entry for this SKU, past and present. Changing a channel's price only updates that channel's latest entry.</div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Product</label><input class="form-input" id="skuEditProduct"></div>
+        <div class="form-group"><label class="form-label">Color</label><input class="form-input" id="skuEditColor"></div>
+      </div>
+      <div class="form-section">Latest price per channel (₹)</div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Amazon</label><input class="form-input" type="number" id="skuEditPrice_Amazon"></div>
+        <div class="form-group"><label class="form-label">Swiggy</label><input class="form-input" type="number" id="skuEditPrice_Swiggy"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Blinkit</label><input class="form-input" type="number" id="skuEditPrice_Blinkit"></div>
+        <div class="form-group"><label class="form-label">Website</label><input class="form-input" type="number" id="skuEditPrice_Website"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('skuEditModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSkuEdit()">Save changes</button>
+    </div>
+  </div>
+</div>
 
 <!-- DELETE CONFIRM MODAL -->
 <div class="modal-overlay" id="deleteModal">
@@ -848,6 +880,7 @@ function entryToDbRow(e){
     revisit_date:e.revisit,input_date:e.inputDate,
     approved_by:e.approvedBy,reason:e.reason,
     source:e.source||'MANUAL',locked:!!e.locked,
+    batch_id:e.batchId||null,
   };
 }
 function dbRowToEntry(r){
@@ -857,7 +890,7 @@ function dbRowToEntry(r){
     revisit:r.revisit_date,inputDate:r.input_date,
     approvedBy:r.approved_by||'',reason:r.reason||'',
     source:r.source||'MANUAL',ts:r.created_at||new Date().toISOString(),
-    locked:!!r.locked,
+    locked:!!r.locked,batchId:r.batch_id||null,
   };
 }
 async function sbFetchPriceLog(){
@@ -929,7 +962,7 @@ let activeTab='tab1';
 let editingId=null;
 let deleteTargetId=null;
 let isAdminMode=sessionStorage.getItem('nuukAdminMode')==='1';
-let sortState={t1:{col:'',dir:1},t2:{col:'',dir:1},t3:{col:'product',dir:1},t4:{col:'product',dir:1},t5:{col:'',dir:1}};
+let sortState={t1:{col:'',dir:1},t2:{col:'inputDate',dir:-1},t3:{col:'product',dir:1},t4:{col:'product',dir:1},t5:{col:'',dir:1}};
 
 // ── HELPERS ──────────────────────────────────────
 const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -1507,7 +1540,10 @@ function renderTab1(){
       <td class="text-right">${hasWeb?priceBlockHtml(webE):'<div class="price-block"><span class="na-cell">N/A</span></div>'}</td>
       <td class="date-cell">${fmtDate(sku.lastChanged)}</td>
       <td style="font-size:13px;font-weight:600;color:var(--ink-2);">${esc(sku.lastApprover)||'<span style="color:var(--ink-4);font-weight:400;">—</span>'}</td>
-      <td style="text-align:right;"><button class="chart-btn" onclick="openChart('${esc(sku.product)}','${esc(sku.color)}')" title="Price history"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="2,12 6,7 9,10 14,4"/></svg> Chart</button></td>
+      <td style="text-align:right;white-space:nowrap;">
+        ${isAdminMode?`<button class="chart-btn" onclick="openSkuEditModal('${esc(sku.product)}','${esc(sku.color)}')" title="Edit this SKU" style="margin-right:5px;">✎ Edit</button>`:''}
+        <button class="chart-btn" onclick="openChart('${esc(sku.product)}','${esc(sku.color)}')" title="Price history"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="2,12 6,7 9,10 14,4"/></svg> Chart</button>
+      </td>
     </tr>`;
 
     // Detail dropdown
@@ -1546,7 +1582,7 @@ function handleAdminAction(){
   if(isAdminMode){
     isAdminMode=false;
     sessionStorage.removeItem('nuukAdminMode');
-    updateAdminBtn();renderTab2();
+    updateAdminBtn();applyFilters();
     showToast('Admin mode off');
     return;
   }
@@ -1565,6 +1601,71 @@ function updateAdminBtn(){
   btn.style.background=isAdminMode?'var(--purple-bg)':'';
   btn.style.color=isAdminMode?'var(--purple)':'';
   btn.style.borderColor=isAdminMode?'var(--purple)':'';
+}
+
+// ── SKU EDIT (admin, from Latest Changes) ─────────
+// Lets an admin correct a SKU directly from the rolled-up Latest Changes
+// view instead of hunting down every underlying Full Log row by hand.
+// Renaming Product/Color relabels every log entry for that SKU (past and
+// present, across all channels) since it's an identity correction, not a
+// price event. Editing a channel's price only touches that channel's
+// single latest entry.
+let skuEditOriginal=null;
+function openSkuEditModal(product,color){
+  if(!isAdminMode)return;
+  skuEditOriginal={product,color};
+  document.getElementById('skuEditProduct').value=product;
+  document.getElementById('skuEditColor').value=color;
+  CHANNELS.forEach(ch=>{
+    const e=getLatestPerChannel(product,color,ch);
+    const input=document.getElementById('skuEditPrice_'+ch);
+    input.value=e?e.newPrice:'';
+    input.disabled=!e;
+    input.placeholder=e?'':'No entry';
+  });
+  document.getElementById('skuEditModal').classList.add('open');
+}
+async function sbRenameSkuInLog(oldProduct,oldColor,newProduct,newColor){
+  const res=await fetch(`${SB.url}/rest/v1/${PL_TABLE}?product=eq.${encodeURIComponent(oldProduct)}&color=eq.${encodeURIComponent(oldColor)}`,{
+    method:'PATCH',headers:sbH,body:JSON.stringify({product:newProduct,color:newColor}),
+  });
+  if(!res.ok)throw new Error('Rename failed: '+await res.text());
+}
+async function saveSkuEdit(){
+  if(!isAdminMode||!skuEditOriginal)return;
+  const{product:oldProduct,color:oldColor}=skuEditOriginal;
+  const newProduct=document.getElementById('skuEditProduct').value.trim();
+  const newColor=document.getElementById('skuEditColor').value.trim();
+  if(!newProduct||!newColor){showToast('Product and Color are required');return;}
+  const entries=priceLog.filter(e=>e.product===oldProduct&&e.color===oldColor);
+  if(entries.length===0){showToast('No matching log entries found');return;}
+
+  // Resolve latest-per-channel targets before renaming so price edits land
+  // on the right rows even though rename mutates product/color in place.
+  const latestByChannel={};
+  CHANNELS.forEach(ch=>{latestByChannel[ch]=getLatestPerChannel(oldProduct,oldColor,ch);});
+
+  const renamed=newProduct!==oldProduct||newColor!==oldColor;
+  if(renamed)entries.forEach(e=>{e.product=newProduct;e.color=newColor;});
+
+  const priceUpdates=[];
+  for(const ch of CHANNELS){
+    const input=document.getElementById('skuEditPrice_'+ch);
+    if(input.disabled)continue;
+    const val=Number(input.value);
+    const entry=latestByChannel[ch];
+    if(entry&&val&&val!==entry.newPrice){entry.newPrice=val;priceUpdates.push(entry);}
+  }
+  if(!renamed&&priceUpdates.length===0){showToast('No changes made');closeModal('skuEditModal');return;}
+  closeModal('skuEditModal');applyFilters();
+  showToast('SKU updated');
+  try{
+    if(renamed)await sbRenameSkuInLog(oldProduct,oldColor,newProduct,newColor);
+    for(const e of priceUpdates)await sbUpdatePriceLog(e.id,{new_price:e.newPrice});
+  }catch(err){
+    console.warn('Supabase sync failed:',err.message);
+    showToast('Saved locally — cloud sync failed: '+err.message);
+  }
 }
 
 // ── TAB 2 ────────────────────────────────────────
@@ -1764,14 +1865,24 @@ function openDrawer(id){
   document.getElementById('dInputDate').value=e.inputDate||new Date().toISOString().split('T')[0];
   document.getElementById('dApprover').value=e.approvedBy||'';
   document.getElementById('dReason').value=e.reason||'';
+  const siblings=e.batchId?priceLog.filter(x=>x.batchId===e.batchId&&x.id!==e.id):[];
+  const wrap=document.getElementById('dBatchWrap');
+  if(siblings.length){
+    wrap.style.display='';
+    document.getElementById('dApplyBatch').checked=true;
+    document.getElementById('dBatchLabel').textContent=`This entry was added together with ${siblings.length} other channel${siblings.length===1?'':'s'} (${siblings.map(s=>s.channel).join(', ')}) in the same update. Apply these changes to all of them too.`;
+  }else{
+    wrap.style.display='none';
+  }
   document.getElementById('drawer').classList.add('open');
   document.getElementById('drawerOverlay').classList.add('open');
 }
 function closeDrawer(){document.getElementById('drawer').classList.remove('open');document.getElementById('drawerOverlay').classList.remove('open');editingId=null;}
 function saveDrawer(){
+  if(!isAdminMode)return;
   if(!editingId)return;
   const idx=priceLog.findIndex(e=>e.id===editingId);if(idx<0)return;
-  priceLog[idx]={...priceLog[idx],
+  const updated={
     product:document.getElementById('dProduct').value.trim(),
     color:document.getElementById('dColor').value.trim(),
     channel:document.getElementById('dChannel').value,
@@ -1783,8 +1894,21 @@ function saveDrawer(){
     approvedBy:document.getElementById('dApprover').value.trim(),
     reason:document.getElementById('dReason').value.trim(),
   };
-  closeDrawer();applyFilters();showToast('Entry updated');
+  priceLog[idx]={...priceLog[idx],...updated};
+  const batchId=priceLog[idx].batchId;
+  const applyBatch=batchId&&document.getElementById('dApplyBatch').checked;
+  // Everything except channel is shared identity/price info for a batch —
+  // one edit corrects all the sibling channel rows created in the same update.
+  const siblings=applyBatch?priceLog.filter(e=>e.batchId===batchId&&e.id!==priceLog[idx].id):[];
+  siblings.forEach(s=>{
+    s.product=updated.product;s.color=updated.color;s.oldPrice=updated.oldPrice;s.newPrice=updated.newPrice;
+    s.changeDate=updated.changeDate;s.revisit=updated.revisit;s.inputDate=updated.inputDate;
+    s.approvedBy=updated.approvedBy;s.reason=updated.reason;
+  });
+  closeDrawer();applyFilters();
+  showToast(siblings.length?`Entry updated (+${siblings.length} linked channel${siblings.length===1?'':'s'})`:'Entry updated');
   sbUpdatePriceLog(priceLog[idx].id,entryToDbRow(priceLog[idx])).catch(e=>console.warn('Supabase update failed:',e.message));
+  siblings.forEach(s=>sbUpdatePriceLog(s.id,entryToDbRow(s)).catch(e=>console.warn('Supabase update failed:',e.message)));
 }
 
 // ── DELETE ───────────────────────────────────────
@@ -1814,8 +1938,11 @@ async function commitLogEntry({product,colorSel,channelSel,oldPrice,newPrice,cha
   const inputDate=new Date().toISOString().split('T')[0];
   const rows=[];
   for(const color of colors){
+    // Rows created together for the same colour across multiple channels share
+    // a batchId so an admin can later edit all of them in one go (see saveDrawer).
+    const batchId=channels.length>1?(Date.now().toString(36)+Math.random().toString(36).slice(2,8)):null;
     for(const ch of channels){
-      rows.push(entryToDbRow({product,color,channel:ch,oldPrice,newPrice,changeDate,revisit:revisit||null,inputDate,approvedBy,reason,source:source||'MANUAL',locked:false}));
+      rows.push(entryToDbRow({product,color,channel:ch,oldPrice,newPrice,changeDate,revisit:revisit||null,inputDate,approvedBy,reason,source:source||'MANUAL',locked:false,batchId}));
     }
   }
   const inserted=await sbInsertPriceLog(rows);
@@ -2147,8 +2274,12 @@ async function loadChannelDataFromSupabase(){
   const indicator=document.getElementById('lastSync');
   try{
     indicator.textContent='Syncing…';
+    // Pull in any price-log changes made by other users since this page loaded.
+    try{priceLog=(await sbFetchPriceLog()).map(dbRowToEntry);}
+    catch(plErr){console.warn('Price log refresh failed:',plErr.message);}
+
     const latest=await sbGetLatestPerChannel();
-    if(!latest.length){indicator.textContent=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short'});return;}
+    if(!latest.length){applyFilters();indicator.textContent=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short'});return;}
 
     for(const row of latest){
       const ch=row.channel.toLowerCase();

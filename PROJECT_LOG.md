@@ -11,7 +11,7 @@ A single-file static dashboard (`index.html` — HTML + CSS + vanilla JS, no bui
 - **Frontend/only app**: `index.html`. Tabs: Latest Changes, Full Log, Price vs Channels, Channel Parity, Master SKU.
 - **Backend**: Supabase project `numkcasfacwcwpvtipob`, accessed client-side via an anon key embedded in the page (no server, no auth beyond that — this is a trusted-team internal tool). Two tables + one storage bucket:
   - `channel_upload_meta` table + `channel-uploads` storage bucket — metadata and files for the per-channel price-parity uploads (Amazon buybox report, Swiggy/Blinkit/Website dumps).
-  - `price_log` table — every price-change log entry. Added 2026-07-06; before that, the log was a hardcoded in-memory JS array (`SEED_LOG_RAW`) that reset on every page refresh and never synced between users.
+  - `price_log` table — every price-change log entry. Added 2026-07-06; before that, the log was a hardcoded in-memory JS array (`SEED_LOG_RAW`) that reset on every page refresh and never synced between users. Has a nullable `batch_id` column (added 2026-07-06) grouping rows created together as one multi-channel update.
 - `MASTER_SKUS` — a hardcoded array of {product, colour, sku, asin, swiggyId, blinkitId}, the canonical product/colour list driving all dropdowns and fuzzy matching.
 - Creating or altering Supabase tables requires the SQL editor in the Supabase dashboard — the anon key can't run DDL, so schema changes need Anshul to run SQL by hand (see `CLAUDE.md`).
 
@@ -30,6 +30,16 @@ The "Price vs Channels" tab wasn't sorted by default and had no way to sort by p
 - **Fixed**: `buildProductChips()` now unions product names from `priceLog`, `MASTER_SKUS`, and all four `channelData` sources, so every literal product string appearing anywhere in the app gets its own chip (sorted alphabetically) and exact-match filtering actually works against whichever tab you're on.
 - **Added**: Tab 3 now sorts alphabetically by product by default (`sortState.t3` initialized to `{col:'product',dir:1}`, same for Tab 4), and "Approved Price" is now a sortable column (`sortTable('t3','price')`) — click again to flip high-to-low/low-to-high, same as the existing Dev % column.
 - Deliberately did *not* try to merge "STROM"/"STROM GO"/"Strom GO V2" into one unified product — they're genuinely different literal strings from different data sources, and merging them would require a real product-name reconciliation pass across the sheets and master data, not a UI fix.
+
+### 2026-07-06 (later still) — Admin: batch-aware editing, SKU rename from Latest Changes, plus three small UX fixes
+Two related asks: (1) editing an entry in Full Log that was originally added as "All channels" required repeating the edit 4 times, once per channel row; (2) there was no way to correct a SKU (rename, or fix a mis-entered price) directly from the Latest Changes view — only Full Log's single-row edit existed.
+- **Added `batch_id`** (new nullable column, migration run by Anshul) — `commitLogEntry()` now stamps every row created together for the same colour across multiple channels with one shared batch id. Rows added before this exist without one and fall back to the old single-row edit behavior — no retroactive guessing of which historical rows "belong together".
+- **Batch-aware edit drawer**: editing a row that has siblings (admin mode only) shows a checkbox, checked by default, to apply the same field changes (product, colour, prices, dates, approver, reason — everything except channel) to every sibling row from that update in one save.
+- **SKU edit from Latest Changes**: admins get an "✎ Edit" button per row. Renaming Product/Colour relabels *every* log entry for that SKU, past and present, across all channels (a rename is an identity correction, not a price event, so it must be retroactive to keep history consistent under the new name). Editing a single channel's price there only updates that channel's latest entry.
+- **Fixed**: "Last Changed" column header on Latest Changes was right-aligned while its date cells were left-aligned — now both left-align.
+- **Kept and improved** the "Sync" header button — now re-fetches the price log itself in addition to channel files, so it actually pulls in a teammate's edits without a full page reload (previously it only refreshed channel-parity uploads).
+- **Changed default sort**: Full Log now opens sorted descending by Input Date (most recently entered first) instead of unsorted insertion order.
+- Verified the batch-edit and SKU-rename flows against production Supabase using a disposable `ZZTEST` SKU created and deleted for the purpose, after an earlier verification pass accidentally mutated a real SKU ("BFF / Tokyo Totti Candy" got renamed and re-priced mid-testing) — reverted immediately, but going forward test writes use disposable rows instead.
 
 ## Keeping this log current
 
