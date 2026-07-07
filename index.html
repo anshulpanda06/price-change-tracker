@@ -2048,8 +2048,11 @@ function drawChart(product,color,filterChannel='',canvasId='chartCanvas',legendI
   if(Object.keys(seriesData).length===0){ctx.clearRect(0,0,W,H);ctx.fillStyle='#a8a8c0';ctx.font='12px Inter,sans-serif';ctx.textAlign='center';ctx.fillText('No price history for this SKU',W/2,H/2);const lg=document.getElementById(legendId);if(lg)lg.innerHTML='';return;}
   let allDates=[],allPrices=[];
   for(const ch of Object.keys(seriesData)){seriesData[ch].forEach(d=>{allDates.push(d.date);allPrices.push(d.price);});}
+  const today=new Date();
   const minDate=Math.min(...allDates.map(d=>d.getTime()));
-  const maxDate=Math.max(...allDates.map(d=>d.getTime()));
+  // Always stretch the axis to today, not just the last logged change — the
+  // flat "still at this price" segment below needs room to actually draw.
+  const maxDate=Math.max(...allDates.map(d=>d.getTime()),today.getTime());
   const minPrice=Math.min(...allPrices)*0.92,maxPrice=Math.max(...allPrices)*1.06;
   const pad={l:64,r:16,t:14,b:32};const cW=W-pad.l-pad.r,cH=H-pad.t-pad.b;
   const xScale=d=>pad.l+(maxDate===minDate?cW/2:(d.getTime()-minDate)/(maxDate-minDate)*cW);
@@ -2059,7 +2062,7 @@ function drawChart(product,color,filterChannel='',canvasId='chartCanvas',legendI
   for(let i=0;i<=4;i++){const y=pad.t+(cH/4)*i;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();const price=maxPrice-(maxPrice-minPrice)*(i/4);ctx.fillStyle='#a8a8c0';ctx.font='9px DM Mono,monospace';ctx.textAlign='right';ctx.fillText('₹'+Math.round(price).toLocaleString('en-IN'),pad.l-6,y+3);}
   for(const ch of Object.keys(seriesData)){
     const pts=seriesData[ch];const color=CHANNEL_COLORS[ch]||'#6c5ce7';
-    const today=new Date();const extended=[...pts];
+    const extended=[...pts];
     if(pts.length>0&&today>pts[pts.length-1].date)extended.push({...pts[pts.length-1],date:today});
     // Step-after path: price is flat until the day it actually changes, then
     // jumps vertically — no diagonal interpolation between log entries.
@@ -2081,6 +2084,14 @@ function drawChart(product,color,filterChannel='',canvasId='chartCanvas',legendI
     ctx.lineTo(xScale(extended[extended.length-1].date),pad.t+cH);ctx.closePath();ctx.fill();
     const r=heightOverride?3:4;
     pts.forEach(p=>{const x=xScale(p.date),y=yScale(p.price);ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();ctx.fillStyle='#1a1a2e';ctx.font='9px DM Mono,monospace';ctx.textAlign='center';ctx.fillText(p.date.toLocaleDateString('en-IN',{day:'2-digit',month:'short'}),x,H-pad.b+13);});
+  }
+  // Label "today" at the right edge when the flat line actually extends past
+  // the last logged change, so it's clear the price is still current.
+  let lastPointDate=null;
+  for(const ch of Object.keys(seriesData)){const d=seriesData[ch][seriesData[ch].length-1].date;if(!lastPointDate||d>lastPointDate)lastPointDate=d;}
+  if(lastPointDate&&xScale(today)-xScale(lastPointDate)>26){
+    ctx.fillStyle='#a8a8c0';ctx.font='9px DM Mono,monospace';ctx.textAlign='center';
+    ctx.fillText('Today',xScale(today),H-pad.b+13);
   }
   ctx.strokeStyle='rgba(26,26,46,0.1)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(pad.l,pad.t+cH);ctx.lineTo(W-pad.r,pad.t+cH);ctx.stroke();
   const legendEl=document.getElementById(legendId);
@@ -2144,10 +2155,12 @@ function drawTrendChart(){
   if(rangeEl){
     if(entries.length===0){rangeEl.textContent='';}
     else{
+      // The chart always extends to today, so the range shown should match —
+      // not just "first change to last logged change".
       const dates=entries.map(e=>new Date(e.changeDate));
-      const min=new Date(Math.min(...dates)),max=new Date(Math.max(...dates));
+      const min=new Date(Math.min(...dates));
       const f=d=>d.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
-      rangeEl.textContent=min.getTime()===max.getTime()?f(min):`${f(min)} – ${f(max)}`;
+      rangeEl.textContent=`${f(min)} – ${f(new Date())}`;
     }
   }
   drawChart(product,color,channel,'t1TrendCanvas','t1TrendLegend',canvas.parentElement.clientHeight||150);

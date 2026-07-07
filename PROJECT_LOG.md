@@ -51,6 +51,9 @@ The two secondary stat cards on Latest Changes ("Price Increases", "Price Reduct
 ### 2026-07-07 (later) — Step-line rendering for price charts
 Both the per-row chart modal and the new inline trend chart were drawing diagonal lines between price-change points, implying a gradual ramp between log entries — misleading, since a price is flat until the exact day it changes, then jumps. Changed `drawChart()`'s stroke and fill paths to a step-after shape (flat horizontal segments, sharp vertical jumps only on actual change dates), matching the reference step-chart style Anshul shared. Applies to both chart surfaces since they share the same renderer.
 
+### 2026-07-07 (later still) — Charts now always extend to today
+The flat "still at this price" segment after a SKU's last logged change was drawing past the chart's own x-axis bounds — the axis range was computed from logged dates only, so `xScale(today)` extrapolated beyond the plot area instead of landing inside it, producing a stray overflow block at the right edge. Fixed by including today in the axis's max-date calculation, so the line correctly draws flat all the way to a labeled "Today" tick at the right edge, starting from the SKU's first logged change on the left. Updated the inline trend chart's date-range label to match (always "first change – today", not "first – last change").
+
 ## Keeping this log current
 
 Whenever a change is made to this project, add a dated entry above (or extend the latest one if it's the same work session) describing what changed and why — not just what, since "why" is what stops future work from re-litigating settled decisions. This is a manual step performed as part of each change, not an automated script — summarizing a diff meaningfully requires understanding the change, which is why this file gets updated at the same time the code does rather than by a hook.
