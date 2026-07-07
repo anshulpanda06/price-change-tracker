@@ -41,6 +41,13 @@ Two related asks: (1) editing an entry in Full Log that was originally added as 
 - **Changed default sort**: Full Log now opens sorted descending by Input Date (most recently entered first) instead of unsorted insertion order.
 - Verified the batch-edit and SKU-rename flows against production Supabase using a disposable `ZZTEST` SKU created and deleted for the purpose, after an earlier verification pass accidentally mutated a real SKU ("BFF / Tokyo Totti Candy" got renamed and re-priced mid-testing) — reverted immediately, but going forward test writes use disposable rows instead.
 
+### 2026-07-07 — Replaced the Price Increases/Reductions cards with an inline price-trend chart
+The two secondary stat cards on Latest Changes ("Price Increases", "Price Reductions") were replaced with a compact, always-visible price-trend chart — Product/Colour/Channel selects driving the same canvas-based line chart that already existed behind each row's "Chart" button, now surfaced by default instead of requiring a click per SKU.
+- **Refactored `drawChart()`** to take optional `canvasId`/`legendId`/`heightOverride` params (defaulting to the existing modal's `chartCanvas`/`chartLegend`/300px) so the same renderer draws both the full-size modal chart and this new compact inline one — no duplicated charting logic.
+- **New trend controls** (`trendProduct`/`trendColor`/`trendChannel` selects) default to the most-recently-changed SKU on first load so the chart is never blank; picking a different product repopulates the colour dropdown from that product's actual logged colours. Shows the plotted date range (e.g. "20 May 2026 – 30 Jun 2026") next to the filters.
+- **Active SKUs** card stays but shrunk to a small fixed-width card next to the chart instead of a full-width stat card — removed the now-dead `.stats-row`/`.stat-card` CSS along with it.
+- Hit a flexbox sizing bug during this — `flex:1` + `height:150px` on a child with no bounded ancestor height caused the whole row to balloon to ~800px tall. Fixed by giving `.trend-row` an explicit `height:200px` so descendants have something concrete to size against.
+
 ## Keeping this log current
 
 Whenever a change is made to this project, add a dated entry above (or extend the latest one if it's the same work session) describing what changed and why — not just what, since "why" is what stops future work from re-litigating settled decisions. This is a manual step performed as part of each change, not an automated script — summarizing a diff meaningfully requires understanding the change, which is why this file gets updated at the same time the code does rather than by a hook.
