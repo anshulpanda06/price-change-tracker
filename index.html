@@ -227,6 +227,7 @@ tr.detail-row td{padding:0;border-bottom:1px solid var(--line);background:var(--
 
 /* HINT BANNER */
 .hint-banner{background:var(--paper-2);border:1px solid var(--line);border-radius:8px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:flex-start;gap:14px;}
+#t1HintBanner{margin:14px 28px 0;}
 .hint-icon{font-size:16px;margin-top:1px;flex-shrink:0;}
 .hint-body{flex:1;}
 .hint-title{font-size:12px;font-weight:600;margin-bottom:3px;}
@@ -386,6 +387,18 @@ tr.detail-row td{padding:0;border-bottom:1px solid var(--line);background:var(--
   <button class="tab-btn" onclick="switchTab('tab5',this)">Master SKU <span class="tab-count" id="cnt5">—</span></button>
 </nav>
 
+<!-- ONBOARDING HINT (Tab 1 only) -->
+<div class="hint-banner" id="t1HintBanner">
+  <div class="hint-icon">💬</div>
+  <div class="hint-body">
+    <div class="hint-title">New here? Two ways to log a price change</div>
+    <div class="hint-text">
+      1. Paste a message (e.g. from a meeting) into <span class="btn" style="display:inline-block;font-size:10px;padding:2px 8px;margin:0 2px;cursor:default;">+ Paste update</span> — it parses the SKUs and prices for you to review before saving.<br>
+      2. Or use <span class="btn" style="display:inline-block;font-size:10px;padding:2px 8px;margin:0 2px;cursor:default;">+ Add entry</span> to manually log a single change.
+    </div>
+  </div>
+</div>
+
 <!-- STAT CARDS (Tab 1 only, shown outside main so slicer can go below) -->
 <div id="t1StatsWrap" class="trend-row">
   <div class="stat-card-mini">
@@ -428,16 +441,6 @@ tr.detail-row td{padding:0;border-bottom:1px solid var(--line);background:var(--
 
   <!-- TAB 1: LATEST CHANGES -->
   <div id="tab1" class="tab-panel active">
-    <div class="hint-banner">
-      <div class="hint-icon">💬</div>
-      <div class="hint-body">
-        <div class="hint-title">New here? Two ways to log a price change</div>
-        <div class="hint-text">
-          1. Paste a message (e.g. from a meeting) into <span class="btn" style="display:inline-block;font-size:10px;padding:2px 8px;margin:0 2px;cursor:default;">+ Paste update</span> — it parses the SKUs and prices for you to review before saving.<br>
-          2. Or use <span class="btn" style="display:inline-block;font-size:10px;padding:2px 8px;margin:0 2px;cursor:default;">+ Add entry</span> to manually log a single change.
-        </div>
-      </div>
-    </div>
     <div class="toolbar-split">
       <div class="search-wrap-sm">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
@@ -1028,8 +1031,9 @@ function switchTab(id,btn){
   document.getElementById(id).classList.add('active');
   btn.classList.add('active');
   activeTab=id;
-  // Show/hide stat cards and slicer based on tab
+  // Show/hide stat cards, onboarding hint, and slicer based on tab
   document.getElementById('t1StatsWrap').style.display=(id==='tab1')?'':'none';
+  document.getElementById('t1HintBanner').style.display=(id==='tab1')?'':'none';
   document.getElementById('slicerBar').style.display=(id==='tab5')?'none':'';
   applyFilters();
 }
